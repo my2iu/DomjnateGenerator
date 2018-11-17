@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<project name="Domjnate Generator" default="Build D.TS grammar">
+
+	<property name="antlr" location="lib/antlr-4.7.1-complete.jar"/>
+
+	<target name="Build D.TS grammar">
+		<java classname="org.antlr.v4.Tool" dir="grammargen" fork="true">
+			<classpath>
+				<pathelement location="${antlr}"/>
+			</classpath>
+			<arg file="grammars/TsIdl.g4"/>
+			<arg value="-o"/>
+			<arg path="grammargen"/>
+		</java>
+	</target>
+
+	<target name="Test D.TS grammar" depends="Build D.TS grammar">
+		<javac destdir="bin" debug="true" fork="true" target="1.8" includeantruntime="false">
+			<classpath>
+				<pathelement location="${antlr}"/>
+			</classpath>
+			<src path="grammargen"/>
+		</javac>
+		<java classname="org.antlr.v4.gui.TestRig" dir="grammargen" fork="true" input="idl/mini.d.ts">
+			<classpath>
+				<pathelement location="${antlr}"/>
+				<pathelement location="bin"/>
+			</classpath>
+			<arg value="TsIdl"/>
+			<arg value="declarationSourceFile"/>
+			<arg value="-gui"/>
+		</java>
+	</target>
+
+	<target name="Download JS Definitions">
+		<mkdir dir="idl"/>
+		<get src="https://github.com/Microsoft/TypeScript/raw/master/lib/lib.dom.d.ts" dest="idl/lib.dom.d.ts"/>
+	</target>
+</project>
