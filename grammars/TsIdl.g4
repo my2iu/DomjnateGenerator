@@ -9,7 +9,7 @@ declarationSourceFile:
 	declarationScript
 	| declarationModule;
 
-declarationModule: unimplemented;
+declarationModule: ;  // unimplemented
 
 declarationScript:
 	declarationScriptElements
@@ -28,20 +28,22 @@ declarationScriptElement:
 
 declarationElement:
 	interfaceDeclaration
-//	| typeAliasDeclaration
+	| typeAliasDeclaration
 //	| namespaceDeclaration
-//	| ambientDeclaration
+	| ambientDeclaration
 //	| importAliasDeclaration
 	;
 
 
+typeAliasDeclaration:
+   'type' bindingIdentifier (typeParameters)? '=' type ';' ;
 
 interfaceDeclaration:
    'interface' bindingIdentifier (typeParameters)? (interfaceExtendsClause)? objectType
    ;
 
 interfaceExtendsClause:
-   'extends' ClassOrInterfaceTypeList
+   'extends' classOrInterfaceTypeList
    ;
 
 classOrInterfaceTypeList:
@@ -54,26 +56,49 @@ classOrInterfaceType:
 	;
 
 typeReference:
-//   typeName /*[no LineTerminator here]*/ (typeArguments)?
+   typeName /*[no LineTerminator here]*/ (typeArguments)?
 	;
 
 typeName:
-   IdentifierReference
-   | namespaceName '.' IdentifierReference
+   identifierReference
+   | namespaceName '.' identifierReference
    ;
 
 namespaceName:
-   IdentifierReference
-   | namespaceName '.' IdentifierReference
+   identifierReference
+   | namespaceName '.' identifierReference
    ;
+
+typeArguments:
+   '<' typeArgumentList '>'
+	;
+
+typeArgumentList:
+   typeArgument
+   | typeArgumentList ',' typeArgument
+	;
+
+typeArgument:
+   type
+	;
 
 typeParameters:
 	'<' typeParameterList '>'
 	;
 
 typeParameterList:
-//	TypeParameter
-//	| TypeParameterList , TypeParameter
+	typeParameter
+	| typeParameterList ',' typeParameter
+	;
+
+typeParameter:
+   bindingIdentifier (constraint)?
+	;
+
+constraint:
+   'extends' type
+   | 'extends' 'keyof' type   // index type query operator
+   | '=' 'any'   // New rule added by me
 	;
 
 objectType:
@@ -93,31 +118,36 @@ typeMemberList:
 
 typeMember:
    propertySignature
-//   | CallSignature
-//   | ConstructSignature
-//   | IndexSignature
-//   | MethodSignature
+   | callSignature
+   | constructSignature
+   | indexSignature
+   | methodSignature
    ;
 
 propertySignature:
-   propertyName ('?')? (typeAnnotation)?
+   ('readonly')? propertyName ('?')? (typeAnnotation)?
    ;
+
+propertyName:
+   identifierName
+   | StringLiteral
+   | NumericLiteral
+	;
 
 typeAnnotation:
    ':' type
    ;
 
-propertyName:
-   IdentifierName
-//   | StringLiteral
-//   | NumericLiteral
-	;
-
 type:
    unionOrIntersectionOrPrimaryType
-//   | functionType
-//   | constructorType
+   | functionType
+   | constructorType
 	;
+
+indexSignature:
+   '[' bindingIdentifier ':' 'string' ']' typeAnnotation
+   | '[' bindingIdentifier ':' 'number' ']' typeAnnotation
+   ;
 
 unionOrIntersectionOrPrimaryType:
 	unionOrIntersectionOrPrimaryType '|' intersectionOrPrimaryType
@@ -132,12 +162,15 @@ intersectionOrPrimaryType:
 primaryType:
    parenthesizedType
    | predefinedType
-//   | typeReference
-//   | objectType
-//   | arrayType
-//   | tupleType
-//   | typeQuery
-//   | thisType
+   | typeReference
+   | objectType
+   | primaryType /*[no LineTerminator here]*/ '[' ']'  // arrayType
+   | tupleType
+   | primaryType '[' typeReference ']'  // New rule by me for indexed access operator
+   | typeQuery
+   | thisType
+	| StringLiteral   // No idea what's going on there, but this does show up
+	| NumericLiteral   // No idea what's going on there, but this does show up
 	;
 
 parenthesizedType:
@@ -153,8 +186,103 @@ predefinedType:
    | 'void'
 	;
 	
+callSignature:
+	(typeParameters)? '(' (parameterList)? ')' (typeAnnotation)?
+	;	
+
+parameterList:
+   requiredParameterList
+   | optionalParameterList
+   | restParameter
+   | requiredParameterList ',' optionalParameterList
+   | requiredParameterList ',' restParameter
+   | optionalParameterList ',' restParameter
+   | requiredParameterList ',' optionalParameterList ',' restParameter
+   ;
+
+requiredParameterList:
+   requiredParameter
+   |requiredParameterList ',' requiredParameter
+   ;
+
+requiredParameter:
+   (accessibilityModifier)? bindingIdentifierOrPattern (typeAnnotation)?
+   | bindingIdentifier ':' StringLiteral
+   ;
+
+accessibilityModifier:
+   'public'
+   | 'private'
+   | 'protected'
+   ;
+
+bindingIdentifierOrPattern:
+   bindingIdentifier
+//   | bindingPattern
+   ;
+
+optionalParameterList:
+   optionalParameter
+   | optionalParameterList ',' optionalParameter
+   ;
+
+optionalParameter:
+   (accessibilityModifier)? bindingIdentifierOrPattern '?' (typeAnnotation)?
+//   | (accessibilityModifier)? bindingIdentifierOrPattern (typeAnnotation)? initializer
+   | bindingIdentifier '?' ':' StringLiteral
+   ;
+
+restParameter:
+   '...' bindingIdentifier (typeAnnotation)?
+   ;
+
+tupleType:
+   '[' tupleElementTypes ']'
+	;
+
+tupleElementTypes:
+   tupleElementType
+   | tupleElementTypes ',' tupleElementType
+   ;
+
+tupleElementType:
+   type
+   ;	
+
+methodSignature :
+	propertyName ('?')? callSignature;	
+
+constructSignature:
+   'new' (typeParameters)? '(' (parameterList)? ')' (typeAnnotation)?
+   ;
+
+
+functionType:
+   (typeParameters)? '(' (parameterList)? ')' '=>' type
+   ;
+
+constructorType:
+   'new' (typeParameters)? '(' (parameterList)? ')' '=>' type
+   ;
+
+thisType:
+   'this' ;
+
+typeQuery:
+   'typeof' typeQueryExpression ;
+
+typeQueryExpression:
+   identifierReference
+   | typeQueryExpression '.' identifierName
+   ;
+
+	
 /*
 Mutually left-recursive
+arrayType:
+   primaryType  '[' ']'
+	;
+
 unionType:
 	unionOrIntersectionOrPrimaryType '|' intersectionOrPrimaryType
 	;
@@ -164,7 +292,29 @@ intersectionType:
 	;
 */	
 
-unimplemented : ; 
+ambientDeclaration:
+   'declare' ambientVariableDeclaration
+//   | 'declare' ambientFunctionDeclaration
+//   | 'declare' ambientClassDeclaration
+//   | 'declare' ambientEnumDeclaration
+//   | 'declare' ambientNamespaceDeclaration
+   ;
+   
+ambientVariableDeclaration:
+   'var' ambientBindingList ';'
+   | 'let' ambientBindingList ';'
+   | 'const' ambientBindingList ';'
+   ;
+
+ambientBindingList:
+   ambientBinding
+   | ambientBindingList ',' ambientBinding
+   ;
+
+ambientBinding:
+   bindingIdentifier (typeAnnotation)?
+   ;
+   
 
 WS : [ \t\r\n]+ -> skip ;
 

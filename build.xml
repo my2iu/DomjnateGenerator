@@ -4,13 +4,16 @@
 	<property name="antlr" location="lib/antlr-4.7.1-complete.jar"/>
 
 	<target name="Build D.TS grammar">
+		<mkdir dir="grammargen/com/user00/domjnate/generator/tsparser"/>
 		<java classname="org.antlr.v4.Tool" dir="grammargen" fork="true">
 			<classpath>
 				<pathelement location="${antlr}"/>
 			</classpath>
 			<arg file="grammars/TsIdl.g4"/>
+			<arg value="-package"/>
+			<arg value="com.user00.domjnate.generator.tsparser"/>
 			<arg value="-o"/>
-			<arg path="grammargen"/>
+			<arg path="grammargen/com/user00/domjnate/generator/tsparser"/>
 		</java>
 	</target>
 
@@ -21,6 +24,13 @@
 			</classpath>
 			<src path="grammargen"/>
 		</javac>
+		<java classname="com.user00.domjnate.generator.tsparser.TsDeclarationParser" fork="true">
+			<classpath>
+				<pathelement location="${antlr}"/>
+				<pathelement location="bin"/>
+			</classpath>
+		</java>
+		<!--
 		<java classname="org.antlr.v4.gui.TestRig" dir="grammargen" fork="true" input="idl/mini.d.ts">
 			<classpath>
 				<pathelement location="${antlr}"/>
@@ -30,6 +40,7 @@
 			<arg value="declarationSourceFile"/>
 			<arg value="-gui"/>
 		</java>
+		-->
 	</target>
 
 	<target name="Download JS Definitions">
