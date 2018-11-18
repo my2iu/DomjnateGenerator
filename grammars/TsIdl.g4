@@ -36,7 +36,7 @@ declarationElement:
 
 
 typeAliasDeclaration:
-   'type' bindingIdentifier (typeParameters)? '=' type ';' ;
+   ('declare')? 'type' bindingIdentifier (typeParameters)? '=' type ';' ;
 
 interfaceDeclaration:
    'interface' bindingIdentifier (typeParameters)? (interfaceExtendsClause)? objectType
@@ -92,14 +92,16 @@ typeParameterList:
 	;
 
 typeParameter:
-   bindingIdentifier (constraint)?
+   bindingIdentifier (constraint)? (typeParameterDefault)?
 	;
 
 constraint:
    'extends' type
    | 'extends' 'keyof' type   // index type query operator
-   | '=' 'any'   // New rule added by me
 	;
+
+typeParameterDefault:  // New rule for type parameter defaults
+	'=' type ;
 
 objectType:
    '{' (typeBody)? '}'
@@ -218,7 +220,7 @@ accessibilityModifier:
 
 bindingIdentifierOrPattern:
    bindingIdentifier
-//   | bindingPattern
+   | bindingPattern
    ;
 
 optionalParameterList:
@@ -228,13 +230,15 @@ optionalParameterList:
 
 optionalParameter:
    (accessibilityModifier)? bindingIdentifierOrPattern '?' (typeAnnotation)?
-//   | (accessibilityModifier)? bindingIdentifierOrPattern (typeAnnotation)? initializer
+   | (accessibilityModifier)? bindingIdentifierOrPattern (typeAnnotation)? initializer
    | bindingIdentifier '?' ':' StringLiteral
    ;
 
 restParameter:
    '...' bindingIdentifier (typeAnnotation)?
    ;
+
+
 
 tupleType:
    '[' tupleElementTypes ']'
@@ -294,7 +298,7 @@ intersectionType:
 
 ambientDeclaration:
    'declare' ambientVariableDeclaration
-//   | 'declare' ambientFunctionDeclaration
+   | 'declare' ambientFunctionDeclaration
 //   | 'declare' ambientClassDeclaration
 //   | 'declare' ambientEnumDeclaration
 //   | 'declare' ambientNamespaceDeclaration
@@ -315,6 +319,9 @@ ambientBinding:
    bindingIdentifier (typeAnnotation)?
    ;
    
+ambientFunctionDeclaration:
+	'function' bindingIdentifier callSignature ';'
+	;   
 
 WS : [ \t\r\n]+ -> skip ;
 

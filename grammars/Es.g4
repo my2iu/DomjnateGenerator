@@ -2,6 +2,60 @@
 // Taken from http://www.ecma-international.org/ecma-262/6.0/
 grammar Es;
 
+
+bindingPattern :
+	objectBindingPattern
+	| arrayBindingPattern
+	;
+	
+objectBindingPattern :
+	'{' '}'
+	| '{' bindingPropertyList '}'
+	| '{' bindingPropertyList ',' '}'
+	;
+	
+arrayBindingPattern :
+	'[' (elision)? (bindingRestElement)? ']'
+	| '[' bindingElementList ']'
+	| '[' bindingElementList ',' (elision)? (bindingRestElement)? ']'
+	;
+
+bindingPropertyList :
+	bindingProperty
+	| bindingPropertyList ',' bindingProperty
+	;
+
+bindingElementList :
+	bindingElisionElement
+	| bindingElementList ',' bindingElisionElement
+	;
+
+bindingElisionElement :
+	(elision)? bindingElement
+	;
+	
+bindingProperty :
+	singleNameBinding ;
+propertyName : bindingElement ;
+bindingElement :
+	singleNameBinding
+	| bindingPattern (initializer)?
+	;
+singleNameBinding :
+	bindingIdentifier (initializer)?
+	;
+bindingRestElement :
+	'...' bindingIdentifier ;
+
+initializer :
+	'=' // assignmentExpression    // I don't think initializers will occur in declaration files
+	; 
+
+elision :
+	','
+	| elision ','
+	;
+
 bindingIdentifier : identifier ;
 identifierReference : identifier ;
 
