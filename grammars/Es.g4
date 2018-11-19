@@ -3,66 +3,66 @@
 grammar Es;
 
 
-bindingPattern :
+bindingPattern:
 	objectBindingPattern
 	| arrayBindingPattern
 	;
 	
-objectBindingPattern :
+objectBindingPattern:
 	'{' '}'
 	| '{' bindingPropertyList '}'
 	| '{' bindingPropertyList ',' '}'
 	;
 	
-arrayBindingPattern :
+arrayBindingPattern:
 	'[' (elision)? (bindingRestElement)? ']'
 	| '[' bindingElementList ']'
 	| '[' bindingElementList ',' (elision)? (bindingRestElement)? ']'
 	;
 
-bindingPropertyList :
+bindingPropertyList:
 	bindingProperty
 	| bindingPropertyList ',' bindingProperty
 	;
 
-bindingElementList :
+bindingElementList:
 	bindingElisionElement
 	| bindingElementList ',' bindingElisionElement
 	;
 
-bindingElisionElement :
+bindingElisionElement:
 	(elision)? bindingElement
 	;
 	
-bindingProperty :
+bindingProperty:
 	singleNameBinding ;
-propertyName : bindingElement ;
-bindingElement :
+propertyName: bindingElement ;
+bindingElement:
 	singleNameBinding
 	| bindingPattern (initializer)?
 	;
-singleNameBinding :
+singleNameBinding:
 	bindingIdentifier (initializer)?
 	;
-bindingRestElement :
+bindingRestElement:
 	'...' bindingIdentifier ;
 
-initializer :
+initializer:
 	'=' // assignmentExpression    // I don't think initializers will occur in declaration files
 	; 
 
-elision :
+elision:
 	','
 	| elision ','
 	;
 
-bindingIdentifier : identifier ;
-identifierReference : identifier ;
+bindingIdentifier: identifier ;
+identifierReference: identifier ;
 
-identifier : identifierName ;
+identifier: identifierName ;
 
 // Skips encoded Unicode characters
-identifierName :
+identifierName:
 	'extends' 
 	| 'public'
 	| 'type'
@@ -73,76 +73,76 @@ identifierName :
 	| IdentifierNameLex
 	;
 
-IdentifierNameLex :
+IdentifierNameLex:
 	[_$\p{ID_Start}][_$\p{ID_Continue}\u200c\u200d]*;
 
 // Skips encoded Unicode characters or multi-line strings
-StringLiteral :  
+StringLiteral:  
 	'"' (~[\\\r\n"] | [\\]['"bfnrtv])* '"'
 	| '\'' (~[\\\r\n'] | [\\]['"bfnrtv])* '\''
 	;
 
-NumericLiteral :
+NumericLiteral:
 	DecimalLiteral
 	| BinaryIntegerLiteral
 	| OctalIntegerLiteral
 	| HexIntegerLiteral
 	;
 
-DecimalLiteral :
+DecimalLiteral:
 	DecimalIntegerLiteral '.' (DecimalDigits)? (ExponentPart)?
 	| '.' DecimalDigits (ExponentPart)?
 	| DecimalIntegerLiteral (ExponentPart)?
 	;
 
-DecimalIntegerLiteral :
+DecimalIntegerLiteral:
 	'0'
 	| NonZeroDigit (DecimalDigits)?
 	;
 
-DecimalDigits :
+DecimalDigits:
 	[0-9]+
 	;
 
 
-NonZeroDigit :
+NonZeroDigit:
 	[1-9] ;
 
-ExponentPart :
+ExponentPart:
 	ExponentIndicator SignedInteger
 	;
 	
-ExponentIndicator :
+ExponentIndicator:
 	[eE] ;
 
-SignedInteger :
+SignedInteger:
 	DecimalDigits
 	| '+' DecimalDigits
 	| '-' DecimalDigits
 	;
 
-BinaryIntegerLiteral :
+BinaryIntegerLiteral:
 	'0b' BinaryDigits
 	| '0B' BinaryDigits
 	;
 
-BinaryDigits :
+BinaryDigits:
 	[01]+ ;
 	
-OctalIntegerLiteral :
+OctalIntegerLiteral:
 	'0o' OctalDigits
 	| '0O' OctalDigits
 	;
 	
-OctalDigits :
+OctalDigits:
 	[0-7]+ ;
 	
 
-HexIntegerLiteral :
+HexIntegerLiteral:
 	'0x' HexDigits
 	| '0X' HexDigits
 	;
 	
-HexDigits :
+HexDigits:
 	[0-9a-fA-F]+ ;
 	

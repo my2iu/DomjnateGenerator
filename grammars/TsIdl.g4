@@ -130,11 +130,11 @@ typeMember:
    ;
 
 propertySignature:
-   (propertySignatureReadOnly)? propertyName (propertySignatureOptional)? (typeAnnotation)?
+   (propertySignatureReadOnly)? propertyName (optional)? (typeAnnotation)?
    ;
    
-propertySignatureReadOnly : 'readonly' ;
-propertySignatureOptional : '?' ;   
+propertySignatureReadOnly: 'readonly' ;
+optional: '?' ;   
 
 propertyName:
    identifierName
@@ -172,13 +172,17 @@ primaryType:
    | predefinedType
    | typeReference
    | objectType
-   | primaryType /*[no LineTerminator here]*/ '[' ']'  // arrayType
+   | primaryType /*[no LineTerminator here]*/ primaryTypeIndexable
    | tupleType
-   | primaryType '[' typeReference ']'  // New rule by me for indexed access operator
    | typeQuery
    | thisType
 	| StringLiteral   // No idea what's going on there, but this does show up
 	| NumericLiteral   // No idea what's going on there, but this does show up
+	;
+
+primaryTypeIndexable:
+	'[' ']'  // arrayType
+	| '[' typeReference ']' // New rule by me for indexed access operator
 	;
 
 parenthesizedType:
@@ -235,9 +239,9 @@ optionalParameterList:
    ;
 
 optionalParameter:
-   (accessibilityModifier)? bindingIdentifierOrPattern '?' (typeAnnotation)?
+   (accessibilityModifier)? bindingIdentifierOrPattern optional (typeAnnotation)?
    | (accessibilityModifier)? bindingIdentifierOrPattern (typeAnnotation)? initializer
-   | bindingIdentifier '?' ':' StringLiteral
+   | bindingIdentifier optional ':' StringLiteral
    ;
 
 restParameter:
@@ -259,8 +263,8 @@ tupleElementType:
    type
    ;	
 
-methodSignature :
-	propertyName ('?')? callSignature;	
+methodSignature:
+	propertyName (optional)? callSignature;	
 
 constructSignature:
    'new' (typeParameters)? '(' (parameterList)? ')' (typeAnnotation)?
@@ -329,8 +333,8 @@ ambientFunctionDeclaration:
 	'function' bindingIdentifier callSignature ';'
 	;   
 
-WS : [ \t\r\n]+ -> skip ;
+WS: [ \t\r\n]+ -> skip ;
 
-COMMENT : ('/*' .*? '*/'
+COMMENT: ('/*' .*? '*/'
 		| '//' ~[\r\n]*)
 		 -> channel(HIDDEN);
