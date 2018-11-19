@@ -1,0 +1,10 @@
+package test.pkg;
+
+import jsinterop.annotations.JsType;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsProperty;
+
+@JsType(isNative=true,name="Test2")
+interface Test2 extends Test1, Node
+{
+}

@@ -1,0 +1,5 @@
+interface Test
+{
+	method(a, b);
+	method2(a: string) : number;
+}
