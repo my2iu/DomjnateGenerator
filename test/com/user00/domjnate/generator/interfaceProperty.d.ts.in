@@ -3,4 +3,5 @@ interface Test
 	a: number;
 	readonly b: string;
 	c?: any;
+	d?: number;
 }

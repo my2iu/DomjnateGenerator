@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.BasicJsType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
@@ -213,7 +214,9 @@ public class TsDeclarationsReader
             PrimaryTypeContext primary = ctx.typeAnnotation().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType();
             if (primary.predefinedType() != null)
             {
-               prop.basicType = primary.predefinedType().getText();
+               BasicJsType basicType = new BasicJsType();
+               basicType.type = primary.predefinedType().getText();
+               prop.basicType = basicType;
             }
          }
          

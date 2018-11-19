@@ -17,5 +17,8 @@ String getB();
 Object getC();
 @JsProperty(name="c")
 void setC(Object val);
-Unhandled optional property
+@JsProperty(name="d")
+Double getD();
+@JsProperty(name="d")
+void setD(Double val);
 }

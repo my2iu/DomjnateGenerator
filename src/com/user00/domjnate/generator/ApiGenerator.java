@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.function.Consumer;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.BasicJsType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
@@ -52,6 +53,20 @@ public class ApiGenerator
    {
       return name;
    }
+   
+   String typeString(BasicJsType basicType, boolean nullable)
+   {
+      String type = "Object";
+      switch(basicType.type)
+      {
+      case "any": type = "Object"; break;
+      case "number": type = nullable ? "Double" : "double"; break;
+      case "string": type = "String"; break;
+      case "boolean": type = nullable ? "Boolean" : "boolean"; break;
+      default: type = "unknown"; break;
+      }
+      return type;
+   }
 
    void generateInterface(InterfaceDefinition intf) throws IOException
    {
@@ -89,14 +104,7 @@ public class ApiGenerator
             String type = "Object";
             if (prop.basicType != null)
             {
-               switch(prop.basicType)
-               {
-               case "any": type = "Object"; break;
-               case "number": type = "double"; break;
-               case "string": type = "String"; break;
-               case "boolean": type = "boolean"; break;
-               default: type = "unknown"; break;
-               }
+               type = typeString(prop.basicType, prop.optional); 
             }
             out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
             out.println(String.format("%2$s %1$s();", getterName(prop.name), type));
@@ -106,9 +114,6 @@ public class ApiGenerator
                out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
                out.println(String.format("void %1$s(%2$s val);", setterName(prop.name), type));
             }
-
-            if (prop.optional)
-               out.println("Unhandled optional property");
          }
          for (PropertyDefinition method: intf.methods)
          {
