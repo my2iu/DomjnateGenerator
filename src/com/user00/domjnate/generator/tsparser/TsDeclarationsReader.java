@@ -7,15 +7,93 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.CallSignatureDefinition;
+import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.MethodSignatureContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.ParameterListContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeMemberContext;
 
 public class TsDeclarationsReader
 {
+   static class CallSignatureReader extends TsIdlBaseVisitor<Void>
+   {
+      CallSignatureDefinition sig = new CallSignatureDefinition();
+      
+      @Override
+      public Void visitCallSignature(CallSignatureContext ctx)
+      {
+         if (ctx.typeParameters() != null)
+            sig.problems.add("Call signature has unhandled type parameters");
+         
+         if (ctx.typeAnnotation() != null)
+         {
+            // Return type
+         }
+         
+         if (ctx.parameterList() != null)
+         {
+            ctx.parameterList().accept(this);
+         }
+         
+         return null;
+      }
+      
+      @Override
+      public Void visitParameterList(ParameterListContext ctx)
+      {
+         if (ctx.restParameter() != null)
+            sig.problems.add("Unhandled rest parameter");
+         if (ctx.optionalParameterList() != null)
+            sig.problems.add("Unhandled optional parameter");
+         if (ctx.requiredParameterList() != null)
+            ctx.requiredParameterList().accept(this);
+         
+         return null;
+      }
+      
+      @Override
+      public Void visitRequiredParameter(RequiredParameterContext ctx)
+      {
+         String name = null;
+         if (ctx.bindingIdentifier() != null)
+            name = ctx.bindingIdentifier().getText();
+         if (ctx.bindingIdentifierOrPattern() != null)
+         {
+            if (ctx.bindingIdentifierOrPattern().bindingPattern() != null)
+               sig.problems.add("binding pattern used for call signature parameter");
+            else
+               name = ctx.bindingIdentifierOrPattern().bindingIdentifier().getText();
+         }
+         if (name == null)
+         {
+            sig.problems.add("No call signature parameter name");
+            return null;
+         }
+         if (ctx.accessibilityModifier() != null)
+            sig.problems.add("Unhandled accessibility modifier on parameter " + name);
+         if (ctx.StringLiteral() != null)
+            sig.problems.add("Unhandled binding to string literal" + name);
+         if (ctx.typeAnnotation() != null)
+         {
+            
+         }
+         CallParameter param = new CallParameter();
+         param.name = name;
+         sig.params.add(param);
+         
+         return null;
+      }
+      
+   }
+   
    static class TypeBodyReader extends TsIdlBaseVisitor<Void>
    {
       InterfaceDefinition intf;
@@ -28,15 +106,41 @@ public class TsDeclarationsReader
       public Void visitTypeMember(TypeMemberContext ctx)
       {
          if (ctx.callSignature() != null)
-            intf.addProblem("Unhandled call signature");
+            intf.problems.add("Unhandled call signature");
          if (ctx.constructSignature() != null)
-            intf.addProblem("Unhandled construct signature");
+            intf.problems.add("Unhandled construct signature");
          if (ctx.indexSignature() != null)
-            intf.addProblem("Unhandled index signature");
+            intf.problems.add("Unhandled index signature");
          if (ctx.methodSignature() != null)
-            intf.addProblem("Unhandled method signature");
+            ctx.methodSignature().accept(this);
          if (ctx.propertySignature() != null)
             ctx.propertySignature().accept(this);
+         return null;
+      }
+      
+      @Override
+      public Void visitMethodSignature(MethodSignatureContext ctx)
+      {
+         if (ctx.propertyName().NumericLiteral() != null || ctx.propertyName().StringLiteral() != null)
+         {
+            intf.problems.add("Method with string literal or numeric literal as a name");
+            return null;
+         }
+         String name = ctx.propertyName().identifierName().getText();
+         
+         if (ctx.optional() != null)
+            intf.problems.add("Unhandled method with optional " + name);
+         
+         CallSignatureReader call = new CallSignatureReader();
+         ctx.callSignature().accept(call);
+         
+         PropertyDefinition prop = new PropertyDefinition();
+         prop.name = name;
+         prop.optional = (ctx.optional() != null);
+         prop.callSigType = call.sig;
+         
+         intf.methods.add(prop);
+         
          return null;
       }
       
@@ -45,7 +149,7 @@ public class TsDeclarationsReader
       {
          if (ctx.propertyName().NumericLiteral() != null || ctx.propertyName().StringLiteral() != null)
          {
-            intf.addProblem("Property with string literal or numeric literal as a name");
+            intf.problems.add("Property with string literal or numeric literal as a name");
             return null;
          }
          String name = ctx.propertyName().identifierName().getText(); 
@@ -55,8 +159,21 @@ public class TsDeclarationsReader
          
          if (ctx.propertySignatureReadOnly() != null)
             prop.readOnly = true;
-         if (ctx.propertySignatureOptional() != null)
+         if (ctx.optional() != null)
             prop.optional = true;
+         
+         if (ctx.typeAnnotation() != null && ctx.typeAnnotation().type() != null 
+               && ctx.typeAnnotation().type().unionOrIntersectionOrPrimaryType() != null
+               && ctx.typeAnnotation().type().unionOrIntersectionOrPrimaryType().unionOrIntersectionOrPrimaryType() == null
+               && ctx.typeAnnotation().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().intersectionOrPrimaryType() == null)
+         {
+            // Primary type, no intersection or union
+            PrimaryTypeContext primary = ctx.typeAnnotation().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType();
+            if (primary.predefinedType() != null)
+            {
+               prop.basicType = primary.predefinedType().getText();
+            }
+         }
          
          intf.properties.add(prop);
          return null;
@@ -76,9 +193,9 @@ public class TsDeclarationsReader
          if (ctx.interfaceDeclaration() != null)
             ctx.interfaceDeclaration().accept(this);
          else if (ctx.ambientDeclaration() != null)
-            api.addProblem("Unhandled ambient declaration " + ctx.ambientDeclaration().getText());
+            api.problems.add("Unhandled ambient declaration " + ctx.ambientDeclaration().getText());
          else if (ctx.typeAliasDeclaration() != null)
-            api.addProblem("Unhandled type alias declaration " + ctx.typeAliasDeclaration().getText());
+            api.problems.add("Unhandled type alias declaration " + ctx.typeAliasDeclaration().getText());
          return null;
       }
       
@@ -92,9 +209,9 @@ public class TsDeclarationsReader
          api.interfaces.put(intf.name, intf);
          
          if (ctx.interfaceExtendsClause() != null)
-            intf.addProblem("Unhandled extends " + ctx.interfaceExtendsClause().getText());
+            intf.problems.add("Unhandled extends " + ctx.interfaceExtendsClause().getText());
          if (ctx.typeParameters() != null)
-            intf.addProblem("Unhandled generics " + ctx.typeParameters().getText());
+            intf.problems.add("Unhandled generics " + ctx.typeParameters().getText());
          
          if (ctx.objectType().typeBody() != null)
             ctx.objectType().typeBody().accept(new TypeBodyReader(intf));

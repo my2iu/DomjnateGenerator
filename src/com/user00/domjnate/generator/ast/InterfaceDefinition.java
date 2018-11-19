@@ -11,12 +11,7 @@ public class InterfaceDefinition
    public String name;
    
    public List<PropertyDefinition> properties = new ArrayList<>();
+   public List<PropertyDefinition> methods = new ArrayList<>();
    
-   /** Problems encountered when generating the API */
-   public List<String> problems = new ArrayList<>();
-   
-   public void addProblem(String err)
-   {
-      problems.add(err);
-   }
+   public ProblemTracker problems = new ProblemTracker();
 }

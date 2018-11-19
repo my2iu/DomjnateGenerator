@@ -9,6 +9,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 
@@ -26,6 +27,11 @@ public class ApiGenerator
    {
       return "set" + propName.substring(0, 1).toUpperCase() + propName.substring(1);
    }
+   
+   String methodName(String name)
+   {
+      return name;
+   }
 
    void generateInterface(InterfaceDefinition intf) throws IOException
    {
@@ -36,51 +42,86 @@ public class ApiGenerator
             Writer writer = new OutputStreamWriter(outStream, StandardCharsets.UTF_8);
             PrintWriter out = new PrintWriter(writer))
       {
-         out.println(String.format("package %0$s;", pkg));
+         out.println(String.format("package %1$s;", pkg));
          out.println();
          out.println("import jsinterop.annotations.JsType;");
+         out.println("import jsinterop.annotations.JsMethod;");
          out.println("import jsinterop.annotations.JsProperty;");
          out.println();
 
-         for (String err: intf.problems)
-         {
-            out.println(err);
-         }
+         intf.problems.dump(out);
          
-         out.println(String.format("@JsType(isNative=true,name=\"%0$s\")", name));
-         out.println(String.format("interface %0$s", name));
+         out.println(String.format("@JsType(isNative=true,name=\"%1$s\")", name));
+         out.println(String.format("interface %1$s", name));
          out.println("{");
          
          for (PropertyDefinition prop: intf.properties)
          {
-            out.println(String.format("@JsProperty(name=\"%0$s\")", prop.name));
-            out.println(String.format("Object %0$s();", getterName(prop.name)));
+            String type = "Object";
+            if (prop.basicType != null)
+            {
+               switch(prop.basicType)
+               {
+               case "any": type = "Object"; break;
+               case "number": type = "double"; break;
+               case "string": type = "String"; break;
+               case "boolean": type = "boolean"; break;
+               default: type = "unknown"; break;
+               }
+            }
+            out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
+            out.println(String.format("%2$s %1$s();", getterName(prop.name), type));
             
             if (!prop.readOnly)
             {
-               out.println(String.format("@JsProperty(name=\"%0$s\")", prop.name));
-               out.println(String.format("void %0$s(Object val);", setterName(prop.name)));
+               out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
+               out.println(String.format("void %1$s(%2$s val);", setterName(prop.name), type));
             }
 
             if (prop.optional)
                out.println("Unhandled optional property");
+         }
+         for (PropertyDefinition method: intf.methods)
+         {
+            generateMethod(out, method);
          }
          
          out.println("}");
       }
    }
    
+   private void generateMethod(PrintWriter out, PropertyDefinition method)
+   {
+      String returnType = "Object";
+      
+      out.println(String.format("@JsMethod(name=\"%1$s\")", method.name));
+      out.print(returnType + " ");
+      out.print(methodName(method.name));
+      out.print("(");
+      boolean isFirst = true;
+      for (CallParameter param: method.callSigType.params)
+      {
+         if (!isFirst) out.print(", ");
+         isFirst = false;
+         String paramType = "Object";
+         out.print(paramType + " ");
+         out.print(param.name);
+      }
+      out.print(");");
+      out.println();
+      method.problems.dump(out);
+      method.callSigType.problems.dump(out);
+      for (CallParameter param: method.callSigType.params)
+         param.problems.dump(out);
+   }
+
    public void generateFor(ApiDefinition api) throws IOException
    {
       for (InterfaceDefinition intf: api.interfaces.values())
       {
          generateInterface(intf);
       }
-      
-      for (String err: api.problems)
-      {
-         System.err.println(err);
-      }
 
+      api.problems.dump(System.err);
    }
 }
