@@ -1,6 +1,7 @@
 package com.user00.domjnate.generator.tsparser;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -264,9 +265,14 @@ public class TsDeclarationsReader
       }
    }
    
-   public static TsIdlParser.DeclarationSourceFileContext parseTs() throws IOException
+   public static TsIdlParser.DeclarationSourceFileContext parseTs(String fileName) throws IOException
    {
-      CharStream file = CharStreams.fromFileName("idl/lib.dom.d.ts");
+      CharStream file = CharStreams.fromFileName(fileName);
+      return parseTs(file);
+   }
+
+   public static TsIdlParser.DeclarationSourceFileContext parseTs(CharStream file)
+   {
       TsIdlLexer lexer = new TsIdlLexer(file);
       CommonTokenStream tokens = new CommonTokenStream(lexer);
       TsIdlParser parser = new TsIdlParser(tokens);

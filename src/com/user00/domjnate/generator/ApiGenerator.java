@@ -7,6 +7,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.function.Consumer;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
@@ -18,6 +20,23 @@ public class ApiGenerator
 {
    String outputDir = "apigen";
    String pkg = "com.user00.domjnate.api";
+   
+   FileOutputManager files = new FileOutputManager();
+   
+   static class FileOutputManager
+   {
+      void makeFile(String outputDir, String pkg, String name, Consumer<PrintWriter> worker) throws IOException
+      {
+         String pkgDir = Paths.get(outputDir, pkg.replace('.', File.separatorChar)).toString();
+         new File(pkgDir).mkdirs();
+         try (FileOutputStream outStream = new FileOutputStream(pkgDir + File.separatorChar + name + ".java");
+               Writer writer = new OutputStreamWriter(outStream, StandardCharsets.UTF_8);
+               PrintWriter out = new PrintWriter(writer))
+         {
+            worker.accept(out);
+         }         
+      }
+   }
    
    String getterName(String propName)
    {
@@ -36,13 +55,8 @@ public class ApiGenerator
 
    void generateInterface(InterfaceDefinition intf) throws IOException
    {
-      String pkgDir = outputDir + File.separatorChar + pkg.replace('.', File.separatorChar);
       String name = intf.name;
-      new File(pkgDir).mkdirs();
-      try (FileOutputStream outStream = new FileOutputStream(pkgDir + File.separatorChar + name + ".java");
-            Writer writer = new OutputStreamWriter(outStream, StandardCharsets.UTF_8);
-            PrintWriter out = new PrintWriter(writer))
-      {
+      files.makeFile(outputDir, pkg, name, (out) -> {
          out.println(String.format("package %1$s;", pkg));
          out.println();
          out.println("import jsinterop.annotations.JsType;");
@@ -102,7 +116,7 @@ public class ApiGenerator
          }
          
          out.println("}");
-      }
+      });
    }
    
    private void generateMethod(PrintWriter out, PropertyDefinition method)

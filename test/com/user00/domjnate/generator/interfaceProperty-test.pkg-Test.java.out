@@ -1,0 +1,21 @@
+package test.pkg;
+
+import jsinterop.annotations.JsType;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsProperty;
+
+@JsType(isNative=true,name="Test")
+interface Test
+{
+@JsProperty(name="a")
+double getA();
+@JsProperty(name="a")
+void setA(double val);
+@JsProperty(name="b")
+String getB();
+@JsProperty(name="c")
+Object getC();
+@JsProperty(name="c")
+void setC(Object val);
+Unhandled optional property
+}

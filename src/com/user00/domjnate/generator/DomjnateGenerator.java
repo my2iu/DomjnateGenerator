@@ -12,7 +12,7 @@ public class DomjnateGenerator
    {
       // Read out type information for DOM
       ApiDefinition api = new ApiDefinition();
-      TsIdlParser.DeclarationSourceFileContext libDomTs = TsDeclarationsReader.parseTs();
+      TsIdlParser.DeclarationSourceFileContext libDomTs = TsDeclarationsReader.parseTs("idl/lib.dom.d.ts");
       libDomTs.accept(new TsDeclarationsReader.InterfaceFinder(api));
       
       // Generate JsInterop API based on type data that we've read
