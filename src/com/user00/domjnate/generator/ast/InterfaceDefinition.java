@@ -9,6 +9,7 @@ import java.util.List;
 public class InterfaceDefinition
 {
    public String name;
+   public List<TypeReference> extendsTypes;
    
    public List<PropertyDefinition> properties = new ArrayList<>();
    public List<PropertyDefinition> methods = new ArrayList<>();

@@ -12,6 +12,7 @@ import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
+import com.user00.domjnate.generator.ast.TypeReference;
 
 public class ApiGenerator
 {
@@ -52,7 +53,21 @@ public class ApiGenerator
          intf.problems.dump(out);
          
          out.println(String.format("@JsType(isNative=true,name=\"%1$s\")", name));
-         out.println(String.format("interface %1$s", name));
+         out.print(String.format("interface %1$s", name));
+         if (intf.extendsTypes != null)
+         {
+            out.print(" extends ");
+            boolean isFirst = true;
+            for (TypeReference typeRef: intf.extendsTypes)
+            {
+               if (!isFirst)
+                  out.print(", ");
+               isFirst = false;
+               out.print(typeRef.typeName);
+               typeRef.problems.dump(out);
+            }
+         }
+         out.println();
          out.println("{");
          
          for (PropertyDefinition prop: intf.properties)

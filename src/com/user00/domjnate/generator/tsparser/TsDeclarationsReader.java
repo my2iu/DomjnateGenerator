@@ -1,6 +1,8 @@
 package com.user00.domjnate.generator.tsparser;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -11,18 +13,57 @@ import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
+import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceExtendsClauseContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.MethodSignatureContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.NamespaceNameContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ParameterListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeMemberContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeReferenceContext;
 
 public class TsDeclarationsReader
 {
+   static TsIdlBaseVisitor<TypeReference> TYPE_REFERENCE_READER = new TsIdlBaseVisitor<TypeReference>() {
+      @Override
+      public TypeReference visitTypeReference(TypeReferenceContext ctx) {
+         TypeReference ref = new TypeReference();
+         String typeName = ctx.typeName().identifierReference().getText();
+         NamespaceNameContext namespace = ctx.typeName().namespaceName();
+         while (namespace != null)
+         {
+            typeName = namespace.identifierReference().getText() + "." + typeName;
+            namespace = namespace.namespaceName();
+         }
+         ref.typeName = typeName;
+         if (ctx.typeArguments() != null)
+            ref.problems.add("Unhandled type arguments on " + ref.typeName);
+         return ref;
+      }
+   }; 
+   
+   static class InterfaceExtendsReader extends TsIdlBaseVisitor<Void>
+   {
+      List<TypeReference> types = new ArrayList<>();
+      @Override
+      public Void visitInterfaceExtendsClause(InterfaceExtendsClauseContext ctx)
+      {
+         ctx.classOrInterfaceTypeList().accept(this);
+         return null;
+      }
+      @Override
+      public Void visitClassOrInterfaceType(ClassOrInterfaceTypeContext ctx)
+      {
+         types.add(ctx.typeReference().accept(TYPE_REFERENCE_READER));
+         return null;
+      }
+   }
    static class CallSignatureReader extends TsIdlBaseVisitor<Void>
    {
       CallSignatureDefinition sig = new CallSignatureDefinition();
@@ -209,7 +250,11 @@ public class TsDeclarationsReader
          api.interfaces.put(intf.name, intf);
          
          if (ctx.interfaceExtendsClause() != null)
-            intf.problems.add("Unhandled extends " + ctx.interfaceExtendsClause().getText());
+         {
+            InterfaceExtendsReader extendsReader = new InterfaceExtendsReader();
+            ctx.interfaceExtendsClause().accept(extendsReader);
+            intf.extendsTypes = extendsReader.types;
+         }
          if (ctx.typeParameters() != null)
             intf.problems.add("Unhandled generics " + ctx.typeParameters().getText());
          
