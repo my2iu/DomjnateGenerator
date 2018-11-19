@@ -10,6 +10,7 @@
 				<pathelement location="${antlr}"/>
 			</classpath>
 			<arg file="grammars/TsIdl.g4"/>
+			<arg value="-visitor"/>
 			<arg value="-package"/>
 			<arg value="com.user00.domjnate.generator.tsparser"/>
 			<arg value="-o"/>

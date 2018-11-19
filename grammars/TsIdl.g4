@@ -5,6 +5,9 @@ grammar TsIdl;
 
 import Es;
 
+declarationSourceFileEOF:
+	declarationSourceFile EOF ;
+
 declarationSourceFile:
 	declarationScript
 	| declarationModule;
@@ -127,8 +130,11 @@ typeMember:
    ;
 
 propertySignature:
-   ('readonly')? propertyName ('?')? (typeAnnotation)?
+   (propertySignatureReadOnly)? propertyName (propertySignatureOptional)? (typeAnnotation)?
    ;
+   
+propertySignatureReadOnly : 'readonly' ;
+propertySignatureOptional : '?' ;   
 
 propertyName:
    identifierName
