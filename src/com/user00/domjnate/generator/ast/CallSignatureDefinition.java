@@ -13,6 +13,7 @@ public class CallSignatureDefinition
       public ProblemTracker problems = new ProblemTracker();
    }
    public List<CallParameter> params = new ArrayList<>(); 
+   public List<CallParameter> optionalParams = new ArrayList<>(); 
    
    public ProblemTracker problems = new ProblemTracker();
 }

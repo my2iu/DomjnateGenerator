@@ -123,8 +123,16 @@ public class ApiGenerator
          out.println("}");
       });
    }
-   
+
    private void generateMethod(PrintWriter out, PropertyDefinition method)
+   {
+      for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
+      {
+         generateMethodWithOptionals(out, method, n);
+      }
+   }
+   
+   private void generateMethodWithOptionals(PrintWriter out, PropertyDefinition method, int numOptionals)
    {
       String returnType = "Object";
       
@@ -135,6 +143,15 @@ public class ApiGenerator
       boolean isFirst = true;
       for (CallParameter param: method.callSigType.params)
       {
+         if (!isFirst) out.print(", ");
+         isFirst = false;
+         String paramType = "Object";
+         out.print(paramType + " ");
+         out.print(param.name);
+      }
+      for (int n = 0; n < numOptionals; n++)
+      {
+         CallParameter param = method.callSigType.optionalParams.get(n);
          if (!isFirst) out.print(", ");
          isFirst = false;
          String paramType = "Object";

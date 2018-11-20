@@ -23,6 +23,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceDeclarationCo
 import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceExtendsClauseContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.MethodSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.NamespaceNameContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.OptionalParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ParameterListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureContext;
@@ -95,7 +96,7 @@ public class TsDeclarationsReader
          if (ctx.restParameter() != null)
             sig.problems.add("Unhandled rest parameter");
          if (ctx.optionalParameterList() != null)
-            sig.problems.add("Unhandled optional parameter");
+            ctx.optionalParameterList().accept(this);
          if (ctx.requiredParameterList() != null)
             ctx.requiredParameterList().accept(this);
          
@@ -135,6 +136,40 @@ public class TsDeclarationsReader
          return null;
       }
       
+      @Override
+      public Void visitOptionalParameter(OptionalParameterContext ctx)
+      {
+         String name = null;
+         if (ctx.bindingIdentifier() != null)
+            name = ctx.bindingIdentifier().getText();
+         if (ctx.bindingIdentifierOrPattern() != null)
+         {
+            if (ctx.bindingIdentifierOrPattern().bindingPattern() != null)
+               sig.problems.add("binding pattern used for call signature parameter");
+            else
+               name = ctx.bindingIdentifierOrPattern().bindingIdentifier().getText();
+         }
+         if (name == null)
+         {
+            sig.problems.add("No call signature parameter name");
+            return null;
+         }
+         if (ctx.initializer() != null)
+            sig.problems.add("Unhandled initializer on optional parameter " + name);
+         if (ctx.accessibilityModifier() != null)
+            sig.problems.add("Unhandled accessibility modifier on parameter " + name);
+         if (ctx.StringLiteral() != null)
+            sig.problems.add("Unhandled binding to string literal" + name);
+         if (ctx.typeAnnotation() != null)
+         {
+            
+         }
+         CallParameter param = new CallParameter();
+         param.name = name;
+         sig.optionalParams.add(param);
+         
+         return null;
+      }
    }
    
    static class TypeBodyReader extends TsIdlBaseVisitor<Void>

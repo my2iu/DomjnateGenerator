@@ -2,4 +2,5 @@ interface Test
 {
 	method(a, b);
 	method2(a: string) : number;
+	optionalParams(a: string, b?: string, c?:string) : void;
 }

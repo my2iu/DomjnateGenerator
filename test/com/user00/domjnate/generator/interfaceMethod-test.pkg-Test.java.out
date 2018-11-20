@@ -11,4 +11,10 @@ interface Test
 Object method(Object a, Object b);
 @JsMethod(name="method2")
 Object method2(Object a);
+@JsMethod(name="optionalParams")
+Object optionalParams(Object a);
+@JsMethod(name="optionalParams")
+Object optionalParams(Object a, Object b);
+@JsMethod(name="optionalParams")
+Object optionalParams(Object a, Object b, Object c);
 }
