@@ -74,6 +74,12 @@ public class ApiGenerator
             return type;
          }
          @Override
+         public String visitTypeReferenceType(TypeReference type)
+         {
+            return type.typeName;
+         }
+         
+         @Override
          public String visitType(Type type)
          {
             return "Object";
