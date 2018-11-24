@@ -11,6 +11,10 @@ public abstract class Type
       {
          return visitType(type);
       }
+      public U visitNullableType(NullableType type)
+      {
+         return visitType(type);
+      }
       public U visitTypeReferenceType(TypeReference type)
       {
          return visitType(type);

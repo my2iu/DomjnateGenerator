@@ -17,6 +17,7 @@ import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.ErrorType;
 import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
+import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.TypeReference;
@@ -25,6 +26,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeCo
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceDeclarationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceExtendsClauseContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.IntersectionOrPrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.MethodSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.NamespaceNameContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.OptionalParameterContext;
@@ -39,6 +41,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParametersContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeReferenceContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.UnionOrIntersectionOrPrimaryTypeContext;
 
 public class TsDeclarationsReader
 {
@@ -69,9 +72,33 @@ public class TsDeclarationsReader
       }
 
       @Override
-      public Type visitUnionOrIntersectionOrPrimaryType(com.user00.domjnate.generator.tsparser.TsIdlParser.UnionOrIntersectionOrPrimaryTypeContext ctx) {
+      public Type visitUnionOrIntersectionOrPrimaryType(UnionOrIntersectionOrPrimaryTypeContext ctx) {
          if (ctx.unionOrIntersectionOrPrimaryType() != null)
          {
+            // Gather all the types being unioned together
+            List<Type> subtypes = new ArrayList<>();
+            UnionOrIntersectionOrPrimaryTypeContext union = ctx;
+            subtypes.add(parseType(union.intersectionOrPrimaryType()));
+            while (union.unionOrIntersectionOrPrimaryType() != null)
+            {
+               union = union.unionOrIntersectionOrPrimaryType();
+               subtypes.add(parseType(union.intersectionOrPrimaryType()));
+            }
+            for (int n = 0; n < subtypes.size(); n++)
+            {
+               Type t = subtypes.get(n);
+               if (t instanceof TypeReference && ((TypeReference)t).typeName.equals("null"))
+               {
+                  subtypes.remove(n);
+                  NullableType nullable = new NullableType();
+                  if (subtypes.size() == 1)
+                  {
+                     nullable.subtype = subtypes.get(0);
+                     return nullable;
+                  }
+                  return new ErrorType("Unhandled union type");
+               }
+            }
             return new ErrorType("Unhandled union type");
          }
          return ctx.intersectionOrPrimaryType().accept(this);
@@ -79,9 +106,18 @@ public class TsDeclarationsReader
       }
       
       @Override
-      public Type visitIntersectionOrPrimaryType(com.user00.domjnate.generator.tsparser.TsIdlParser.IntersectionOrPrimaryTypeContext ctx) {
+      public Type visitIntersectionOrPrimaryType(IntersectionOrPrimaryTypeContext ctx) {
          if (ctx.intersectionOrPrimaryType() != null)
          {
+            // Gather all the types being intersectioned together
+            List<Type> subtypes = new ArrayList<>();
+            IntersectionOrPrimaryTypeContext intersection = ctx;
+            subtypes.add(parseType(intersection.primaryType()));
+            while (intersection.intersectionOrPrimaryType() != null)
+            {
+               intersection = intersection.intersectionOrPrimaryType();
+               subtypes.add(parseType(intersection.primaryType()));
+            }
             return new ErrorType("Unhandled intersection type");
          }
          return ctx.primaryType().accept(this);

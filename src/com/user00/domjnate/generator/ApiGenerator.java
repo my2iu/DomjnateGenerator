@@ -14,6 +14,7 @@ import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
+import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.Type.TypeVisitor;
@@ -77,6 +78,12 @@ public class ApiGenerator
          public String visitTypeReferenceType(TypeReference type)
          {
             return type.typeName;
+         }
+         
+         @Override
+         public String visitNullableType(NullableType type)
+         {
+            return typeString(type.subtype, true);
          }
          
          @Override
