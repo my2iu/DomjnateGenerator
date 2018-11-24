@@ -11,10 +11,12 @@ import java.nio.file.Paths;
 import java.util.function.Consumer;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
-import com.user00.domjnate.generator.ast.BasicJsType;
+import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
+import com.user00.domjnate.generator.ast.Type;
+import com.user00.domjnate.generator.ast.Type.TypeVisitor;
 import com.user00.domjnate.generator.ast.TypeReference;
 
 public class ApiGenerator
@@ -54,18 +56,29 @@ public class ApiGenerator
       return name;
    }
    
-   String typeString(BasicJsType basicType, boolean nullable)
+   String typeString(Type basicType, boolean nullable)
    {
-      String type = "Object";
-      switch(basicType.type)
-      {
-      case "any": type = "Object"; break;
-      case "number": type = nullable ? "Double" : "double"; break;
-      case "string": type = "String"; break;
-      case "boolean": type = nullable ? "Boolean" : "boolean"; break;
-      default: type = "unknown"; break;
-      }
-      return type;
+      return basicType.visit(new TypeVisitor<String>() {
+         @Override
+         public String visitPredefinedType(PredefinedType basicType)
+         {
+            String type = "Object";
+            switch(basicType.type)
+            {
+            case "any": type = "Object"; break;
+            case "number": type = nullable ? "Double" : "double"; break;
+            case "string": type = "String"; break;
+            case "boolean": type = nullable ? "Boolean" : "boolean"; break;
+            default: type = "unknown"; break;
+            }
+            return type;
+         }
+         @Override
+         public String visitType(Type type)
+         {
+            return "Object";
+         }
+      });
    }
 
    void generateInterface(InterfaceDefinition intf) throws IOException
@@ -104,7 +117,8 @@ public class ApiGenerator
             String type = "Object";
             if (prop.basicType != null)
             {
-               type = typeString(prop.basicType, prop.optional); 
+               type = typeString(prop.basicType, prop.optional);
+               prop.basicType.problems.dump(out);
             }
             out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
             out.println(String.format("%2$s %1$s();", getterName(prop.name), type));

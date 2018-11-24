@@ -8,14 +8,17 @@ import java.util.List;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.RuleContext;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
-import com.user00.domjnate.generator.ast.BasicJsType;
+import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
+import com.user00.domjnate.generator.ast.ErrorType;
 import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
+import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeContext;
@@ -26,9 +29,11 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.MethodSignatureContext
 import com.user00.domjnate.generator.tsparser.TsIdlParser.NamespaceNameContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.OptionalParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ParameterListContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.PredefinedTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeMemberContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterListContext;
@@ -55,6 +60,57 @@ public class TsDeclarationsReader
       }
    }; 
    
+   static TsIdlBaseVisitor<Type> TYPE_READER = new TsIdlBaseVisitor<Type>() {
+      @Override
+      public Type visitPredefinedType(PredefinedTypeContext ctx) {
+         PredefinedType basicType = new PredefinedType();
+         basicType.type = ctx.getText();
+         return basicType;
+      }
+
+      @Override
+      public Type visitUnionOrIntersectionOrPrimaryType(com.user00.domjnate.generator.tsparser.TsIdlParser.UnionOrIntersectionOrPrimaryTypeContext ctx) {
+         if (ctx.unionOrIntersectionOrPrimaryType() != null)
+         {
+            return new ErrorType("Unhandled union type");
+         }
+         return ctx.intersectionOrPrimaryType().accept(this);
+         
+      }
+      
+      @Override
+      public Type visitIntersectionOrPrimaryType(com.user00.domjnate.generator.tsparser.TsIdlParser.IntersectionOrPrimaryTypeContext ctx) {
+         if (ctx.intersectionOrPrimaryType() != null)
+         {
+            return new ErrorType("Unhandled intersection type");
+         }
+         return ctx.primaryType().accept(this);
+      }
+      
+      @Override public Type visitTypeReference(TypeReferenceContext ctx) {
+         TypeReference ref = new TypeReference();
+         String typeName = ctx.typeName().identifierReference().getText();
+         NamespaceNameContext namespace = ctx.typeName().namespaceName();
+         while (namespace != null)
+         {
+            typeName = namespace.identifierReference().getText() + "." + typeName;
+            namespace = namespace.namespaceName();
+         }
+         ref.typeName = typeName;
+         if (ctx.typeArguments() != null)
+            ref.problems.add("Unhandled type arguments on " + ref.typeName);
+         return ref;
+      };
+   };
+   
+   static Type parseType(RuleContext ctx)
+   {
+      Type type = ctx.accept(TYPE_READER);
+      if (type != null)
+         return type;
+      return new ErrorType("Could not parse type " + ctx.getText());
+   }
+
    static TsIdlBaseVisitor<List<GenericParameter>> TYPE_PARAMETERS_READER = new TsIdlBaseVisitor<List<GenericParameter>>() {
       public List<GenericParameter> visitTypeParameters(TypeParametersContext ctx) {
          return ctx.typeParameterList().accept(this);
@@ -316,19 +372,9 @@ public class TsDeclarationsReader
          if (ctx.optional() != null)
             prop.optional = true;
          
-         if (ctx.typeAnnotation() != null && ctx.typeAnnotation().type() != null 
-               && ctx.typeAnnotation().type().unionOrIntersectionOrPrimaryType() != null
-               && ctx.typeAnnotation().type().unionOrIntersectionOrPrimaryType().unionOrIntersectionOrPrimaryType() == null
-               && ctx.typeAnnotation().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().intersectionOrPrimaryType() == null)
+         if (ctx.typeAnnotation() != null && ctx.typeAnnotation().type() != null) 
          {
-            // Primary type, no intersection or union
-            PrimaryTypeContext primary = ctx.typeAnnotation().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType();
-            if (primary.predefinedType() != null)
-            {
-               BasicJsType basicType = new BasicJsType();
-               basicType.type = primary.predefinedType().getText();
-               prop.basicType = basicType;
-            }
+            prop.basicType = parseType(ctx.typeAnnotation().type());
          }
          
          intf.properties.add(prop);
