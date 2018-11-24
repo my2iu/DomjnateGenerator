@@ -6,11 +6,11 @@ import java.util.List;
 public class CallSignatureDefinition
 {
    public List<GenericParameter> genericTypeParameters;
-   public PredefinedType returnType;
+   public Type returnType;
    public static class CallParameter
    {
       public String name;
-      public PredefinedType type;
+      public Type type;
       public ProblemTracker problems = new ProblemTracker();
    }
    public List<CallParameter> params = new ArrayList<>(); 

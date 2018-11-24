@@ -45,24 +45,6 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.UnionOrIntersectionOrP
 
 public class TsDeclarationsReader
 {
-   static TsIdlBaseVisitor<TypeReference> TYPE_REFERENCE_READER = new TsIdlBaseVisitor<TypeReference>() {
-      @Override
-      public TypeReference visitTypeReference(TypeReferenceContext ctx) {
-         TypeReference ref = new TypeReference();
-         String typeName = ctx.typeName().identifierReference().getText();
-         NamespaceNameContext namespace = ctx.typeName().namespaceName();
-         while (namespace != null)
-         {
-            typeName = namespace.identifierReference().getText() + "." + typeName;
-            namespace = namespace.namespaceName();
-         }
-         ref.typeName = typeName;
-         if (ctx.typeArguments() != null)
-            ref.problems.add("Unhandled type arguments on " + ref.typeName);
-         return ref;
-      }
-   }; 
-   
    static TsIdlBaseVisitor<Type> TYPE_READER = new TsIdlBaseVisitor<Type>() {
       @Override
       public Type visitPredefinedType(PredefinedTypeContext ctx) {
@@ -123,7 +105,7 @@ public class TsDeclarationsReader
          return ctx.primaryType().accept(this);
       }
       
-      @Override public Type visitTypeReference(TypeReferenceContext ctx) {
+      @Override public TypeReference visitTypeReference(TypeReferenceContext ctx) {
          TypeReference ref = new TypeReference();
          String typeName = ctx.typeName().identifierReference().getText();
          NamespaceNameContext namespace = ctx.typeName().namespaceName();
@@ -180,7 +162,7 @@ public class TsDeclarationsReader
                   genericParam.problems.add("Unhandled type parameter type");
                else
                {
-                  TypeReference ref = ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType().typeReference().accept(TYPE_REFERENCE_READER);
+                  TypeReference ref = (TypeReference)ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType().typeReference().accept(TYPE_READER);
                   genericParam.simpleExtendsKeyOf = ref.typeName;
                   genericParam.problems.addAll(ref.problems);
                }
@@ -197,7 +179,7 @@ public class TsDeclarationsReader
                   genericParam.problems.add("Unhandled type parameter type");
                else
                {
-                  TypeReference ref = ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType().typeReference().accept(TYPE_REFERENCE_READER);
+                  TypeReference ref = (TypeReference)ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType().typeReference().accept(TYPE_READER);
                   genericParam.simpleExtends = ref.typeName;
                   genericParam.problems.addAll(ref.problems);
                }
@@ -221,7 +203,7 @@ public class TsDeclarationsReader
       @Override
       public Void visitClassOrInterfaceType(ClassOrInterfaceTypeContext ctx)
       {
-         types.add(ctx.typeReference().accept(TYPE_REFERENCE_READER));
+         types.add((TypeReference)ctx.typeReference().accept(TYPE_READER));
          return null;
       }
    }
@@ -237,9 +219,10 @@ public class TsDeclarationsReader
             sig.genericTypeParameters = ctx.typeParameters().accept(TYPE_PARAMETERS_READER);
          }
          
+         // Return type
          if (ctx.typeAnnotation() != null)
          {
-            // Return type
+            sig.returnType = parseType(ctx.typeAnnotation().type());
          }
          
          if (ctx.parameterList() != null)
@@ -285,12 +268,14 @@ public class TsDeclarationsReader
             sig.problems.add("Unhandled accessibility modifier on parameter " + name);
          if (ctx.StringLiteral() != null)
             sig.problems.add("Unhandled binding to string literal" + name);
+         Type paramType = null;
          if (ctx.typeAnnotation() != null)
          {
-            
+            paramType = parseType(ctx.typeAnnotation().type());
          }
          CallParameter param = new CallParameter();
          param.name = name;
+         param.type = paramType;
          sig.params.add(param);
          
          return null;
@@ -320,12 +305,14 @@ public class TsDeclarationsReader
             sig.problems.add("Unhandled accessibility modifier on parameter " + name);
          if (ctx.StringLiteral() != null)
             sig.problems.add("Unhandled binding to string literal" + name);
+         Type paramType = null;
          if (ctx.typeAnnotation() != null)
          {
-            
+            paramType = parseType(ctx.typeAnnotation().type());
          }
          CallParameter param = new CallParameter();
          param.name = name;
+         param.type = paramType;
          sig.optionalParams.add(param);
          
          return null;
@@ -410,7 +397,7 @@ public class TsDeclarationsReader
          
          if (ctx.typeAnnotation() != null && ctx.typeAnnotation().type() != null) 
          {
-            prop.basicType = parseType(ctx.typeAnnotation().type());
+            prop.returnType = parseType(ctx.typeAnnotation().type());
          }
          
          intf.properties.add(prop);

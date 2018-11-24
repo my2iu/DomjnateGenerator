@@ -59,6 +59,7 @@ public class ApiGenerator
    
    String typeString(Type basicType, boolean nullable)
    {
+      if (basicType == null) return "Object";
       return basicType.visit(new TypeVisitor<String>() {
          @Override
          public String visitPredefinedType(PredefinedType basicType)
@@ -118,7 +119,7 @@ public class ApiGenerator
                if (!isFirst)
                   out.print(", ");
                isFirst = false;
-               out.print(typeRef.typeName);
+               out.print(typeString(typeRef, false));
                typeRef.problems.dump(out);
             }
          }
@@ -128,10 +129,10 @@ public class ApiGenerator
          for (PropertyDefinition prop: intf.properties)
          {
             String type = "Object";
-            if (prop.basicType != null)
+            if (prop.returnType != null)
             {
-               type = typeString(prop.basicType, prop.optional);
-               prop.basicType.problems.dump(out);
+               type = typeString(prop.returnType, prop.optional);
+               prop.returnType.problems.dump(out);
             }
             out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
             out.println(String.format("%2$s %1$s();", getterName(prop.name), type));
@@ -173,7 +174,7 @@ public class ApiGenerator
    
    private void generateMethodWithOptionals(PrintWriter out, PropertyDefinition method, int numOptionals)
    {
-      String returnType = "Object";
+      String returnType = typeString(method.returnType, false);
       
       out.println(String.format("@JsMethod(name=\"%1$s\")", method.name));
       out.print(returnType + " ");
@@ -184,7 +185,7 @@ public class ApiGenerator
       {
          if (!isFirst) out.print(", ");
          isFirst = false;
-         String paramType = "Object";
+         String paramType = typeString(param.type, false);
          out.print(paramType + " ");
          out.print(param.name);
       }

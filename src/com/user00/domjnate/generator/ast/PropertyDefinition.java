@@ -6,7 +6,7 @@ public class PropertyDefinition
    public boolean readOnly = false;
    public boolean optional = false;
    
-   public Type basicType;
+   public Type returnType;
    public CallSignatureDefinition callSigType;
    
    public ProblemTracker problems = new ProblemTracker();
