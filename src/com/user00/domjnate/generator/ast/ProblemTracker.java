@@ -26,5 +26,10 @@ public class ProblemTracker
    {
       problems.add(err);
    }
+   
+   public void addAll(ProblemTracker other)
+   {
+      problems.addAll(other.problems);
+   }
 
 }

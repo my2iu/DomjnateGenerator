@@ -100,8 +100,10 @@ typeParameter:
 
 constraint:
    'extends' type
-   | 'extends' 'keyof' type   // index type query operator
+   | 'extends' KeyOf type   // index type query operator
 	;
+
+KeyOf: 'keyof';
 
 typeParameterDefault:  // New rule for type parameter defaults
 	'=' type ;

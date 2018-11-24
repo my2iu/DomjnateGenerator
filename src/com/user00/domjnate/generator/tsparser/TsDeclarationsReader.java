@@ -1,8 +1,8 @@
 package com.user00.domjnate.generator.tsparser;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.antlr.v4.runtime.CharStream;
@@ -13,6 +13,7 @@ import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.BasicJsType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
+import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.TypeReference;
@@ -29,6 +30,9 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeMemberContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterListContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParametersContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeReferenceContext;
 
 public class TsDeclarationsReader
@@ -50,6 +54,68 @@ public class TsDeclarationsReader
          return ref;
       }
    }; 
+   
+   static TsIdlBaseVisitor<List<GenericParameter>> TYPE_PARAMETERS_READER = new TsIdlBaseVisitor<List<GenericParameter>>() {
+      public List<GenericParameter> visitTypeParameters(TypeParametersContext ctx) {
+         return ctx.typeParameterList().accept(this);
+      }
+      @Override
+      public List<GenericParameter> visitTypeParameterList(TypeParameterListContext ctx) 
+      {
+         List<GenericParameter> genericParams = new ArrayList<>();
+         if (ctx.typeParameterList() != null)
+         {
+            genericParams.addAll(ctx.typeParameterList().accept(this));
+         }
+         genericParams.addAll(ctx.typeParameter().accept(this));
+         return genericParams;
+      }
+      @Override
+      public List<GenericParameter> visitTypeParameter(TypeParameterContext ctx) {
+         GenericParameter genericParam = new GenericParameter();
+         genericParam.name = ctx.bindingIdentifier().getText();
+         if (ctx.constraint() != null)
+         {
+            if (ctx.constraint().KeyOf() != null)
+            {
+               if (ctx.constraint().type().unionOrIntersectionOrPrimaryType() == null)
+                  genericParam.problems.add("Unhandled type parameter type");
+               else if (ctx.constraint().type().unionOrIntersectionOrPrimaryType().unionOrIntersectionOrPrimaryType() != null)
+                  genericParam.problems.add("Unhandled type parameter type");
+               else if (ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().intersectionOrPrimaryType() != null)
+                  genericParam.problems.add("Unhandled type parameter type");
+               else if (ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType().typeReference() == null)
+                  genericParam.problems.add("Unhandled type parameter type");
+               else
+               {
+                  TypeReference ref = ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType().typeReference().accept(TYPE_REFERENCE_READER);
+                  genericParam.simpleExtendsKeyOf = ref.typeName;
+                  genericParam.problems.addAll(ref.problems);
+               }
+            }
+            else
+            {
+               if (ctx.constraint().type().unionOrIntersectionOrPrimaryType() == null)
+                  genericParam.problems.add("Unhandled type parameter type");
+               else if (ctx.constraint().type().unionOrIntersectionOrPrimaryType().unionOrIntersectionOrPrimaryType() != null)
+                  genericParam.problems.add("Unhandled type parameter type");
+               else if (ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().intersectionOrPrimaryType() != null)
+                  genericParam.problems.add("Unhandled type parameter type");
+               else if (ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType().typeReference() == null)
+                  genericParam.problems.add("Unhandled type parameter type");
+               else
+               {
+                  TypeReference ref = ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType().typeReference().accept(TYPE_REFERENCE_READER);
+                  genericParam.simpleExtends = ref.typeName;
+                  genericParam.problems.addAll(ref.problems);
+               }
+            }
+         }
+         if (ctx.typeParameterDefault() != null)
+            genericParam.problems.add("Unhandled type parameter default");
+         return Collections.singletonList(genericParam);
+      } 
+   };
    
    static class InterfaceExtendsReader extends TsIdlBaseVisitor<Void>
    {
@@ -75,7 +141,9 @@ public class TsDeclarationsReader
       public Void visitCallSignature(CallSignatureContext ctx)
       {
          if (ctx.typeParameters() != null)
-            sig.problems.add("Call signature has unhandled type parameters");
+         {
+            sig.genericTypeParameters = ctx.typeParameters().accept(TYPE_PARAMETERS_READER);
+         }
          
          if (ctx.typeAnnotation() != null)
          {
@@ -225,12 +293,20 @@ public class TsDeclarationsReader
       @Override
       public Void visitPropertySignature(PropertySignatureContext ctx)
       {
-         if (ctx.propertyName().NumericLiteral() != null || ctx.propertyName().StringLiteral() != null)
+         if (ctx.propertyName().NumericLiteral() != null)
          {
             intf.problems.add("Property with string literal or numeric literal as a name");
             return null;
          }
-         String name = ctx.propertyName().identifierName().getText(); 
+         String name = null;
+         if (ctx.propertyName().identifierName() != null)
+            name = ctx.propertyName().identifierName().getText();
+         else if (ctx.propertyName().StringLiteral() != null)
+         {
+            name = ctx.propertyName().StringLiteral().getText();
+            if (name.startsWith("\"") && name.endsWith("\""))
+               name = name.substring(1, name.length() - 1);
+         }
          
          PropertyDefinition prop = new PropertyDefinition();
          prop.name = name;

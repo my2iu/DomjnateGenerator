@@ -126,6 +126,18 @@ public class ApiGenerator
 
    private void generateMethod(PrintWriter out, PropertyDefinition method)
    {
+      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
+      {
+         out.println("// TODO: Suppressing addEventListener with typed events");
+         return;
+      }
+      if ("removeEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
+      {
+         out.println("// TODO: Suppressing removeEventListener with typed events");
+         return;
+      }
+      if (method.callSigType.genericTypeParameters != null)
+         out.println("Unhandled type parameters on method");
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
          generateMethodWithOptionals(out, method, n);

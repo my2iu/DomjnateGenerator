@@ -5,6 +5,7 @@ import java.util.List;
 
 public class CallSignatureDefinition
 {
+   public List<GenericParameter> genericTypeParameters;
    public BasicJsType returnType;
    public static class CallParameter
    {
