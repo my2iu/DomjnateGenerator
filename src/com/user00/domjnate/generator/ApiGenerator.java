@@ -99,17 +99,6 @@ public class ApiGenerator
          @Override
          public String visitUnionType(UnionType type)
          {
-            // Special handling for event handlers--ignore using objects for event handlers and use functions only
-            if (type.subtypes.size() == 2 && 
-                  type.subtypes.get(1) instanceof TypeReference && "EventListenerObject".equals(((TypeReference)type.subtypes.get(1)).typeName))
-            {
-               return typeString(type.subtypes.get(0), nullable);
-            }
-            if (type.subtypes.size() == 2 && 
-                  type.subtypes.get(0) instanceof TypeReference && "EventListenerObject".equals(((TypeReference)type.subtypes.get(0)).typeName))
-            {
-               return typeString(type.subtypes.get(1), nullable);
-            }
             return super.visitUnionType(type);
          }
          

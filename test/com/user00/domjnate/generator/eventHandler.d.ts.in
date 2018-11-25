@@ -13,12 +13,12 @@ interface EventListener {
 }
 
 type EventListenerObject = number;
-type EventListenerOrObject = EventListener | EventListenerObject;
+type EventListenerOrEventListenerObject = EventListener | EventListenerObject;
 
 interface Element
 {
 	addEventListener<K extends keyof TestEventMap>(type: K, listener: (e: WindowEventMap[K]) => void): void;
-	addEventListener(type: string, listener: EventListenerOrObject): void;
+	addEventListener(type: string, listener: EventListenerOrEventListenerObject): void;
 	removeEventListener<K extends keyof TestEventMap>(type: K, listener: (e: WindowEventMap[K]) => void): void;
-	removeEventListener(type: string, listener: EventListenerOrObject): void;
+	removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void;
 }

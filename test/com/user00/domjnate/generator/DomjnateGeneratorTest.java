@@ -5,31 +5,16 @@ import java.io.IOException;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.Test;
 
-import com.user00.domjnate.generator.ast.ApiDefinition;
-import com.user00.domjnate.generator.tsparser.TsDeclarationsReader;
-import com.user00.domjnate.generator.tsparser.TsIdlParser;
-
 public class DomjnateGeneratorTest
 {
    void generateFilesFromTs(TestGeneratorFileOutputManagerHelper files, String tsResourceName) throws IOException
-   {
-      ApiDefinition api = new ApiDefinition();
-      TsIdlParser.DeclarationSourceFileContext libDomTs = 
-            TsDeclarationsReader.parseTs(CharStreams.fromStream(this.getClass().getResourceAsStream(tsResourceName)));
-      libDomTs.accept(new TsDeclarationsReader.TopLevelReader(api));
-      
-      // Generate JsInterop API based on type data that we've read
-      generateFiles(api, files);
-   }
-   
-   void generateFiles(ApiDefinition api, TestGeneratorFileOutputManagerHelper files) throws IOException
    {
       ApiGenerator generator = new ApiGenerator();
       generator.outputDir = "";
       generator.pkg = "test.pkg";
       generator.files = files;
-      generator.api = api;
-      generator.generate();
+      DomjnateGenerator domjnateGenerator = new DomjnateGenerator();
+      domjnateGenerator.go(CharStreams.fromStream(this.getClass().getResourceAsStream(tsResourceName)), generator);
    }
    
    @Test
