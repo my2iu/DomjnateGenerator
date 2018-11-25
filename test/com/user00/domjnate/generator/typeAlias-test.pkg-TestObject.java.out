@@ -1,0 +1,12 @@
+package test.pkg;
+
+import jsinterop.annotations.JsType;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsProperty;
+
+@JsType(isNative=true,name="TestObject")
+public interface TestObject
+{
+@JsMethod(name="method")
+double method(String a);
+}

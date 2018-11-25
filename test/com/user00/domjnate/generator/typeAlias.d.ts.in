@@ -1,0 +1,16 @@
+interface Test
+{
+	(a:string) : number;
+}
+
+interface TestObject
+{
+	method(a:string):number;
+}
+
+type Listener = Test | TestObject;
+
+interface Source
+{
+	addListener(a:Listener) : void;
+}

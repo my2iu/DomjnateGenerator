@@ -55,4 +55,29 @@ public class DomjnateGeneratorTest
       generateFilesFromTs(files, "interfaceExtends.d.ts.in");
       files.compareWithTestFiles(2, this.getClass(), "interfaceExtends", ".out");
    }
+   
+   @Test
+   public void testFunctionInterface() throws IOException
+   {
+      TestGeneratorFileOutputManagerHelper files = new TestGeneratorFileOutputManagerHelper();
+      generateFilesFromTs(files, "functionInterface.d.ts.in");
+      files.compareWithTestFiles(1, this.getClass(), "functionInterface", ".out");
+   }
+   
+   @Test
+   public void testOrNull() throws IOException
+   {
+      TestGeneratorFileOutputManagerHelper files = new TestGeneratorFileOutputManagerHelper();
+      generateFilesFromTs(files, "orNull.d.ts.in");
+      files.compareWithTestFiles(1, this.getClass(), "orNull", ".out");
+   }
+
+   @Test
+   public void testAlias() throws IOException
+   {
+      TestGeneratorFileOutputManagerHelper files = new TestGeneratorFileOutputManagerHelper();
+      generateFilesFromTs(files, "typeAlias.d.ts.in");
+      files.compareWithTestFiles(3, this.getClass(), "typeAlias", ".out");
+   }
+
 }
