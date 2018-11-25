@@ -35,6 +35,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.PredefinedTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeAliasDeclarationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeMemberContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterContext;
@@ -414,9 +415,9 @@ public class TsDeclarationsReader
       }
    }
    
-   public static class InterfaceFinder extends TsIdlBaseVisitor<Void>
+   public static class TopLevelReader extends TsIdlBaseVisitor<Void>
    {
-      public InterfaceFinder(ApiDefinition api)
+      public TopLevelReader(ApiDefinition api)
       {
          this.api = api;
       }
@@ -429,7 +430,7 @@ public class TsDeclarationsReader
          else if (ctx.ambientDeclaration() != null)
             api.problems.add("Unhandled ambient declaration " + ctx.ambientDeclaration().getText());
          else if (ctx.typeAliasDeclaration() != null)
-            api.problems.add("Unhandled type alias declaration " + ctx.typeAliasDeclaration().getText());
+            ctx.typeAliasDeclaration().accept(this);
          return null;
       }
       
@@ -453,6 +454,19 @@ public class TsDeclarationsReader
          
          if (ctx.objectType().typeBody() != null)
             ctx.objectType().typeBody().accept(new TypeBodyReader(intf));
+         return null;
+      }
+      
+      @Override
+      public Void visitTypeAliasDeclaration(TypeAliasDeclarationContext ctx)
+      {
+         String name = ctx.bindingIdentifier().getText();
+         if (ctx.typeParameters() != null)
+         {
+            api.problems.add("Unhandled type alias declaration with generic type parameters " + name);
+         }
+         Type type = parseType(ctx.type());
+         api.typeAliases.put(name, type);
          return null;
       }
    }

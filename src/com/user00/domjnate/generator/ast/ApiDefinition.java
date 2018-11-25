@@ -10,5 +10,5 @@ public class ApiDefinition
 {
    public Map<String, InterfaceDefinition> interfaces = new HashMap<>();
    public ProblemTracker problems = new ProblemTracker();
-
+   public Map<String, Type> typeAliases = new HashMap<>();
 }

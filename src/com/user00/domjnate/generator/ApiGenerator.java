@@ -26,6 +26,7 @@ public class ApiGenerator
 {
    String outputDir = "apigen";
    String pkg = "com.user00.domjnate.api";
+   ApiDefinition api;
    
    FileOutputManager files = new FileOutputManager();
    
@@ -81,6 +82,10 @@ public class ApiGenerator
          @Override
          public String visitTypeReferenceType(TypeReference type)
          {
+            if (api.typeAliases.containsKey(type.typeName))
+            {
+               return typeString(api.typeAliases.get(type.typeName), nullable);
+            }
             return type.typeName;
          }
          
@@ -259,7 +264,7 @@ public class ApiGenerator
          param.problems.dump(out);
    }
 
-   public void generateFor(ApiDefinition api) throws IOException
+   public void generate() throws IOException
    {
       for (InterfaceDefinition intf: api.interfaces.values())
       {
