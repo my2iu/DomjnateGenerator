@@ -109,7 +109,7 @@ public class ApiGenerator
          intf.problems.dump(out);
          
          out.println(String.format("@JsType(isNative=true,name=\"%1$s\")", name));
-         out.print(String.format("interface %1$s", name));
+         out.print(String.format("public interface %1$s", name));
          if (intf.extendsTypes != null)
          {
             out.print(" extends ");
@@ -194,7 +194,7 @@ public class ApiGenerator
          CallParameter param = method.callSigType.optionalParams.get(n);
          if (!isFirst) out.print(", ");
          isFirst = false;
-         String paramType = "Object";
+         String paramType = typeString(param.type, false);
          out.print(paramType + " ");
          out.print(param.name);
       }

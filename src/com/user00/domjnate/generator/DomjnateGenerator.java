@@ -8,6 +8,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser;
 
 public class DomjnateGenerator
 {
+   String outputDir = "apigen";
    public void go() throws IOException
    {
       // Read out type information for DOM
@@ -17,6 +18,7 @@ public class DomjnateGenerator
       
       // Generate JsInterop API based on type data that we've read
       ApiGenerator generator = new ApiGenerator();
+      generator.outputDir = outputDir;
       generator.generateFor(api);
    }
    
@@ -24,6 +26,9 @@ public class DomjnateGenerator
 
    public static void main(String [] args) throws IOException
    {
-      new DomjnateGenerator().go();
+      DomjnateGenerator generator = new DomjnateGenerator();
+      if (args.length > 0)
+         generator.outputDir = args[0];
+      generator.go();
    }
 }
