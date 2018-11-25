@@ -16,7 +16,7 @@ public class DomjnateGeneratorTest
       ApiDefinition api = new ApiDefinition();
       TsIdlParser.DeclarationSourceFileContext libDomTs = 
             TsDeclarationsReader.parseTs(CharStreams.fromStream(this.getClass().getResourceAsStream(tsResourceName)));
-      libDomTs.accept(new TsDeclarationsReader.InterfaceFinder(api));
+      libDomTs.accept(new TsDeclarationsReader.TopLevelReader(api));
       
       // Generate JsInterop API based on type data that we've read
       generateFiles(api, files);
@@ -28,7 +28,8 @@ public class DomjnateGeneratorTest
       generator.outputDir = "";
       generator.pkg = "test.pkg";
       generator.files = files;
-      generator.generateFor(api);
+      generator.api = api;
+      generator.generate();
    }
    
    @Test

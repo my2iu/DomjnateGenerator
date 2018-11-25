@@ -5,16 +5,16 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
 @JsType(isNative=true,name="Test")
-interface Test
+public interface Test
 {
 @JsMethod(name="method")
 Object method(Object a, Object b);
 @JsMethod(name="method2")
-Object method2(Object a);
+double method2(String a);
 @JsMethod(name="optionalParams")
-Object optionalParams(Object a);
+void optionalParams(String a);
 @JsMethod(name="optionalParams")
-Object optionalParams(Object a, Object b);
+void optionalParams(String a, String b);
 @JsMethod(name="optionalParams")
-Object optionalParams(Object a, Object b, Object c);
+void optionalParams(String a, String b, String c);
 }

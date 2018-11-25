@@ -5,7 +5,7 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
 @JsType(isNative=true,name="Test")
-interface Test
+public interface Test
 {
 @JsProperty(name="a")
 double getA();
