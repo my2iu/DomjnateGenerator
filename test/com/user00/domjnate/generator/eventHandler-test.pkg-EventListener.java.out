@@ -1,0 +1,12 @@
+package test.pkg;
+
+import jsinterop.annotations.JsFunction;
+import jsinterop.annotations.JsType;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsProperty;
+
+@JsFunction
+public interface EventListener
+{
+void accept(Event e);
+}

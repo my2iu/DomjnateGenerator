@@ -1,0 +1,18 @@
+package test.pkg;
+
+import jsinterop.annotations.JsType;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsProperty;
+
+@JsType(isNative=true,name="TestEventMap")
+public interface TestEventMap
+{
+@JsProperty(name="mouse")
+Event getMouse();
+@JsProperty(name="mouse")
+void setMouse(Event val);
+@JsProperty(name="keyboard")
+Event getKeyboard();
+@JsProperty(name="keyboard")
+void setKeyboard(Event val);
+}

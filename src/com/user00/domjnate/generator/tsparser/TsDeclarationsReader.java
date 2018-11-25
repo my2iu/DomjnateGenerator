@@ -21,6 +21,7 @@ import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.TypeReference;
+import com.user00.domjnate.generator.ast.UnionType;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
@@ -67,22 +68,35 @@ public class TsDeclarationsReader
                union = union.unionOrIntersectionOrPrimaryType();
                subtypes.add(parseType(union.intersectionOrPrimaryType()));
             }
+            int orNullPos = -1;
             for (int n = 0; n < subtypes.size(); n++)
             {
                Type t = subtypes.get(n);
                if (t instanceof TypeReference && ((TypeReference)t).typeName.equals("null"))
                {
-                  subtypes.remove(n);
-                  NullableType nullable = new NullableType();
-                  if (subtypes.size() == 1)
-                  {
-                     nullable.subtype = subtypes.get(0);
-                     return nullable;
-                  }
-                  return new ErrorType("Unhandled union type");
+                  orNullPos = n;
                }
             }
-            return new ErrorType("Unhandled union type");
+            if (orNullPos >= 0)
+               subtypes.remove(orNullPos);
+            Type toReturn;
+            if (subtypes.size() == 1)
+            {
+               toReturn = subtypes.get(0);
+            }
+            else
+            {
+               UnionType unionToReturn = new UnionType();
+               unionToReturn.subtypes = subtypes;
+               toReturn = unionToReturn;
+            }
+            if (orNullPos >= 0)
+            {
+               NullableType nullable = new NullableType();
+               nullable.subtype = toReturn;
+               toReturn = nullable;
+            }
+            return toReturn;
          }
          return ctx.intersectionOrPrimaryType().accept(this);
          

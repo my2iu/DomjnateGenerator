@@ -1,0 +1,24 @@
+interface Event
+{
+}
+
+interface TestEventMap
+{
+	"mouse": Event;
+	"keyboard":Event;
+}
+
+interface EventListener {
+	(e:Event) : void;
+}
+
+type EventListenerObject = number;
+type EventListenerOrObject = EventListener | EventListenerObject;
+
+interface Element
+{
+	addEventListener<K extends keyof TestEventMap>(type: K, listener: (e: WindowEventMap[K]) => void): void;
+	addEventListener(type: string, listener: EventListenerOrObject): void;
+	removeEventListener<K extends keyof TestEventMap>(type: K, listener: (e: WindowEventMap[K]) => void): void;
+	removeEventListener(type: string, listener: EventListenerOrObject): void;
+}

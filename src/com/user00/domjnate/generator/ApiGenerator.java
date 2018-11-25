@@ -21,6 +21,7 @@ import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.Type.TypeVisitor;
 import com.user00.domjnate.generator.ast.TypeReference;
+import com.user00.domjnate.generator.ast.UnionType;
 
 public class ApiGenerator
 {
@@ -93,6 +94,23 @@ public class ApiGenerator
          public String visitNullableType(NullableType type)
          {
             return typeString(type.subtype, true);
+         }
+         
+         @Override
+         public String visitUnionType(UnionType type)
+         {
+            // Special handling for event handlers--ignore using objects for event handlers and use functions only
+            if (type.subtypes.size() == 2 && 
+                  type.subtypes.get(1) instanceof TypeReference && "EventListenerObject".equals(((TypeReference)type.subtypes.get(1)).typeName))
+            {
+               return typeString(type.subtypes.get(0), nullable);
+            }
+            if (type.subtypes.size() == 2 && 
+                  type.subtypes.get(0) instanceof TypeReference && "EventListenerObject".equals(((TypeReference)type.subtypes.get(0)).typeName))
+            {
+               return typeString(type.subtypes.get(1), nullable);
+            }
+            return super.visitUnionType(type);
          }
          
          @Override
