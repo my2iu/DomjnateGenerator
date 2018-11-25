@@ -13,6 +13,12 @@ public class InterfaceDefinition
    
    public List<PropertyDefinition> properties = new ArrayList<>();
    public List<PropertyDefinition> methods = new ArrayList<>();
+   public List<CallSignatureDefinition> callSignatures = new ArrayList<>();
    
    public ProblemTracker problems = new ProblemTracker();
+   
+   public boolean isFunction()
+   {
+      return (properties.isEmpty() && methods.isEmpty() && !callSignatures.isEmpty());
+   }
 }

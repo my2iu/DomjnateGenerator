@@ -331,7 +331,7 @@ public class TsDeclarationsReader
       public Void visitTypeMember(TypeMemberContext ctx)
       {
          if (ctx.callSignature() != null)
-            intf.problems.add("Unhandled call signature");
+            ctx.callSignature().accept(this);
          if (ctx.constructSignature() != null)
             intf.problems.add("Unhandled construct signature");
          if (ctx.indexSignature() != null)
@@ -397,10 +397,19 @@ public class TsDeclarationsReader
          
          if (ctx.typeAnnotation() != null && ctx.typeAnnotation().type() != null) 
          {
-            prop.returnType = parseType(ctx.typeAnnotation().type());
+            prop.type = parseType(ctx.typeAnnotation().type());
          }
          
          intf.properties.add(prop);
+         return null;
+      }
+      
+      @Override
+      public Void visitCallSignature(CallSignatureContext ctx)
+      {
+         CallSignatureReader call = new CallSignatureReader();
+         ctx.accept(call);
+         intf.callSignatures.add(call.sig);
          return null;
       }
    }

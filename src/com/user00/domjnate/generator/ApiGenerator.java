@@ -11,7 +11,9 @@ import java.nio.file.Paths;
 import java.util.function.Consumer;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
+import com.user00.domjnate.generator.ast.ProblemTracker;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.NullableType;
@@ -71,6 +73,7 @@ public class ApiGenerator
             case "number": type = nullable ? "Double" : "double"; break;
             case "string": type = "String"; break;
             case "boolean": type = nullable ? "Boolean" : "boolean"; break;
+            case "void": type = "void"; break;
             default: type = "unknown"; break;
             }
             return type;
@@ -95,8 +98,52 @@ public class ApiGenerator
       });
    }
 
+   void generateFunctionInterface(InterfaceDefinition intf) throws IOException
+   {
+      String name = intf.name;
+      files.makeFile(outputDir, pkg, name, (out) -> {
+         out.println(String.format("package %1$s;", pkg));
+         out.println();
+         out.println("import jsinterop.annotations.JsFunction;");
+         out.println("import jsinterop.annotations.JsType;");
+         out.println("import jsinterop.annotations.JsMethod;");
+         out.println("import jsinterop.annotations.JsProperty;");
+         out.println();
+
+         intf.problems.dump(out);
+         
+         out.println("@JsFunction");
+         out.print(String.format("public interface %1$s", name));
+         if (intf.extendsTypes != null)
+         {
+            out.println("Unhandled extends on a function interface");
+         }
+         out.println();
+         out.println("{");
+         
+         for (CallSignatureDefinition call: intf.callSignatures)
+         {
+            if (call.genericTypeParameters != null)
+               out.println("Unhandled type parameters on function interface call signature");
+            for (int n = 0; n <= call.optionalParams.size(); n++)
+            {
+               generateMethodWithOptionals(out, "accept", call, null, n, false);
+            }
+
+         }
+         
+         out.println("}");
+      });
+      
+   }
+   
    void generateInterface(InterfaceDefinition intf) throws IOException
    {
+      if (intf.isFunction())
+      {
+         generateFunctionInterface(intf);
+         return;
+      }
       String name = intf.name;
       files.makeFile(outputDir, pkg, name, (out) -> {
          out.println(String.format("package %1$s;", pkg));
@@ -129,10 +176,10 @@ public class ApiGenerator
          for (PropertyDefinition prop: intf.properties)
          {
             String type = "Object";
-            if (prop.returnType != null)
+            if (prop.type != null)
             {
-               type = typeString(prop.returnType, prop.optional);
-               prop.returnType.problems.dump(out);
+               type = typeString(prop.type, prop.optional);
+               prop.type.problems.dump(out);
             }
             out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
             out.println(String.format("%2$s %1$s();", getterName(prop.name), type));
@@ -146,6 +193,10 @@ public class ApiGenerator
          for (PropertyDefinition method: intf.methods)
          {
             generateMethod(out, method);
+         }
+         for (CallSignatureDefinition call: intf.callSignatures)
+         {
+            out.println("Unhandled call signature on interface");
          }
          
          out.println("}");
@@ -168,20 +219,21 @@ public class ApiGenerator
          out.println("Unhandled type parameters on method");
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
-         generateMethodWithOptionals(out, method, n);
+         generateMethodWithOptionals(out, method.name, method.callSigType, method.problems, n, true);
       }
    }
    
-   private void generateMethodWithOptionals(PrintWriter out, PropertyDefinition method, int numOptionals)
+   private void generateMethodWithOptionals(PrintWriter out, String methodName, CallSignatureDefinition callSigType, ProblemTracker methodProblems, int numOptionals, boolean withJsMethodAnnotation)
    {
-      String returnType = typeString(method.returnType, false);
-      
-      out.println(String.format("@JsMethod(name=\"%1$s\")", method.name));
+      String returnType = typeString(callSigType.returnType, false);
+
+      if (withJsMethodAnnotation)
+         out.println(String.format("@JsMethod(name=\"%1$s\")", methodName));
       out.print(returnType + " ");
-      out.print(methodName(method.name));
+      out.print(methodName(methodName));
       out.print("(");
       boolean isFirst = true;
-      for (CallParameter param: method.callSigType.params)
+      for (CallParameter param: callSigType.params)
       {
          if (!isFirst) out.print(", ");
          isFirst = false;
@@ -191,7 +243,7 @@ public class ApiGenerator
       }
       for (int n = 0; n < numOptionals; n++)
       {
-         CallParameter param = method.callSigType.optionalParams.get(n);
+         CallParameter param = callSigType.optionalParams.get(n);
          if (!isFirst) out.print(", ");
          isFirst = false;
          String paramType = typeString(param.type, false);
@@ -200,9 +252,10 @@ public class ApiGenerator
       }
       out.print(");");
       out.println();
-      method.problems.dump(out);
-      method.callSigType.problems.dump(out);
-      for (CallParameter param: method.callSigType.params)
+      if (methodProblems != null)
+         methodProblems.dump(out);
+      callSigType.problems.dump(out);
+      for (CallParameter param: callSigType.params)
          param.problems.dump(out);
    }
 
