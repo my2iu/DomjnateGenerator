@@ -19,9 +19,9 @@ public class DomjnateGenerator
       generator.outputDir = outputDir;
       go(new CharStream[] {
             CharStreams.fromFileName("idl/lib.dom.d.ts"),     
-//            CharStreams.fromFileName("idl/lib.es5.d.ts"),     
-//            CharStreams.fromFileName("idl/lib.es2015.promise.d.ts"),     
-//            CharStreams.fromFileName("idl/lib.es2015.symbol.d.ts"),     
+            CharStreams.fromFileName("idl/lib.es5.d.ts"),     
+            CharStreams.fromFileName("idl/lib.es2015.promise.d.ts"),     
+            CharStreams.fromFileName("idl/lib.es2015.symbol.d.ts"),     
       }, generator);
    }
 
@@ -50,7 +50,8 @@ public class DomjnateGenerator
       eventListenerOnly.typeName = "EventListener";
       api.typeAliases.put("EventListenerOrEventListenerObject", eventListenerOnly);
       
-      // 
+      // Remove the String type
+      api.interfaces.remove("String");
    }
 
 

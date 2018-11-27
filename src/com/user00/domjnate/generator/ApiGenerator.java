@@ -58,6 +58,8 @@ public class ApiGenerator
    
    String methodName(String name)
    {
+      if ("catch".equals(name))
+         return "_catch";
       return name;
    }
    
