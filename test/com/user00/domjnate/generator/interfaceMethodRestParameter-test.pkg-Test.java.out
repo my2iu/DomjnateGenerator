@@ -1,0 +1,16 @@
+package test.pkg;
+
+import jsinterop.annotations.JsType;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsProperty;
+
+@JsType(isNative=true,name="Test")
+public interface Test
+{
+@JsMethod(name="method")
+Object method(Object a, String... c);
+@JsMethod(name="method")
+Object method(Object a, Object b, String... c);
+@JsMethod(name="method2")
+Object method2(Object a, Object b, void... c);
+}

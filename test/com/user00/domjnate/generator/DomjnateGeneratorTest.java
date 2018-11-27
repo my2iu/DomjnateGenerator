@@ -33,7 +33,15 @@ public class DomjnateGeneratorTest
       generateFilesFromTs(files, "interfaceMethod.d.ts.in");
       files.compareWithTestFiles(1, this.getClass(), "interfaceMethod", ".out");
    }
-   
+
+   @Test
+   public void testInterfaceMethodRestParameter() throws IOException
+   {
+      TestGeneratorFileOutputManagerHelper files = new TestGeneratorFileOutputManagerHelper();
+      generateFilesFromTs(files, "interfaceMethodRestParameter.d.ts.in");
+      files.compareWithTestFiles(1, this.getClass(), "interfaceMethodRestParameter", ".out");
+   }
+
    @Test
    public void testInterfaceExtends() throws IOException
    {

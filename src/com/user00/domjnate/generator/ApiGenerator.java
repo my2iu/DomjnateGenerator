@@ -264,6 +264,15 @@ public class ApiGenerator
          out.print(paramType + " ");
          out.print(param.name);
       }
+      if (callSigType.restParameter != null)
+      {
+         CallParameter param = callSigType.restParameter;
+         if (!isFirst) out.print(", ");
+         isFirst = false;
+         String paramType = typeString(param.type, false);
+         out.print(paramType + "... ");
+         out.print(param.name);
+      }
       out.print(");");
       out.println();
       if (methodProblems != null)

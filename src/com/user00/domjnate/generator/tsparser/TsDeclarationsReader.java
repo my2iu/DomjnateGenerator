@@ -36,6 +36,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.PredefinedTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.RestParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeAliasDeclarationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeMemberContext;
@@ -260,11 +261,28 @@ public class TsDeclarationsReader
       public Void visitParameterList(ParameterListContext ctx)
       {
          if (ctx.restParameter() != null)
-            sig.problems.add("Unhandled rest parameter");
+            ctx.restParameter().accept(this);
          if (ctx.optionalParameterList() != null)
             ctx.optionalParameterList().accept(this);
          if (ctx.requiredParameterList() != null)
             ctx.requiredParameterList().accept(this);
+         
+         return null;
+      }
+      
+      @Override
+      public Void visitRestParameter(RestParameterContext ctx)
+      {
+         String name = ctx.bindingIdentifier().getText();
+         Type paramType = null;
+         if (ctx.typeAnnotation() != null)
+         {
+            paramType = parseType(ctx.typeAnnotation().type());
+         }
+         CallParameter param = new CallParameter();
+         param.name = name;
+         param.type = paramType;
+         sig.restParameter = param;
          
          return null;
       }

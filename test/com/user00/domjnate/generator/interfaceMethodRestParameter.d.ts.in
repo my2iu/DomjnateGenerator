@@ -1,0 +1,5 @@
+interface Test
+{
+	method(a, b?, ...c: string);
+	method2(a, b, ...c: () => void);
+}
