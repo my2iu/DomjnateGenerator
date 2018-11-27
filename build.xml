@@ -47,5 +47,13 @@
 	<target name="Download JS Definitions">
 		<mkdir dir="idl"/>
 		<get src="https://github.com/Microsoft/TypeScript/raw/master/lib/lib.dom.d.ts" dest="idl/lib.dom.d.ts"/>
+		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es2015.generator.d.ts" dest="idl/lib.es2015.generator.d.ts"/>
+		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es2015.iterable.d.ts" dest="idl/lib.es2015.iterable.d.ts"/>
+		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es2015.promise.d.ts" dest="idl/lib.es2015.promise.d.ts"/>
+		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es2015.proxy.d.ts" dest="idl/lib.es2015.proxy.d.ts"/>
+		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es2015.reflect.d.ts" dest="idl/lib.es2015.reflect.d.ts"/>
+		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es2015.symbol.d.ts" dest="idl/lib.es2015.symbol.d.ts"/>
+		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es2015.symbol.wellknown.d.ts" dest="idl/lib.es2015.symbol.wellknown.d.ts"/>
+		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es5.d.ts" dest="idl/lib.es5.d.ts"/>
 	</target>
 </project>

@@ -237,7 +237,15 @@ public class TsDeclarationsReader
          // Return type
          if (ctx.typeAnnotation() != null)
          {
-            sig.returnType = parseType(ctx.typeAnnotation().type());
+            if (ctx.typeAnnotation().type() != null)
+               sig.returnType = parseType(ctx.typeAnnotation().type());
+            else if (ctx.typeAnnotation().booleanTypeGuard() != null)
+            {
+               // Ignore the type guard properties and just treat the type like a boolean
+               PredefinedType type = new PredefinedType();
+               type.type = "boolean";
+               sig.returnType = type;
+            }
          }
          
          if (ctx.parameterList() != null)

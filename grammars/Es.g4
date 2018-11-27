@@ -70,6 +70,9 @@ identifierName:
 	| 'string'
 	| 'declare'
 	| 'readonly'
+	| 'number'
+	| 'namespace'
+	| 'is'
 	| IdentifierNameLex
 	;
 

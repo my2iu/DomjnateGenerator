@@ -2,6 +2,7 @@ package com.user00.domjnate.generator;
 
 import java.io.IOException;
 
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +15,7 @@ public class DomjnateGeneratorTest
       generator.pkg = "test.pkg";
       generator.files = files;
       DomjnateGenerator domjnateGenerator = new DomjnateGenerator();
-      domjnateGenerator.go(CharStreams.fromStream(this.getClass().getResourceAsStream(tsResourceName)), generator);
+      domjnateGenerator.go(new CharStream[] {CharStreams.fromStream(this.getClass().getResourceAsStream(tsResourceName))}, generator);
    }
    
    @Test

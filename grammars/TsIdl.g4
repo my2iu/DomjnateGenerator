@@ -1,5 +1,9 @@
-/** Taken from the Typescript 1.8 documentation 
- *  https://github.com/Microsoft/TypeScript/blob/master/doc/spec.md
+/** 
+ * Taken from the Typescript 1.8 documentation 
+ *   https://github.com/Microsoft/TypeScript/blob/master/doc/spec.md
+ * 
+ * Plus, some bits were added by checking out the new Typescript features at
+ *   https://www.typescriptlang.org/docs/handbook/advanced-types.html 
  */
 grammar TsIdl;
 
@@ -132,7 +136,7 @@ typeMember:
    ;
 
 propertySignature:
-   (propertySignatureReadOnly)? propertyName (optional)? (typeAnnotation)?
+   (propertySignatureReadOnly)? propertyName optional? (typeAnnotation)?
    ;
    
 propertySignatureReadOnly: 'readonly' ;
@@ -145,18 +149,26 @@ propertyName:
 	;
 
 typeAnnotation:
-   ':' type
+   ':' (type | booleanTypeGuard)
    ;
+   
+booleanTypeGuard:
+	bindingIdentifier 'is' type
+	;
 
 type:
    unionOrIntersectionOrPrimaryType
    | functionType
    | constructorType
+   | conditionalType
 	;
 
+notOptional: '-?' ;   
+
 indexSignature:
-   '[' bindingIdentifier ':' 'string' ']' typeAnnotation
-   | '[' bindingIdentifier ':' 'number' ']' typeAnnotation
+	(propertySignatureReadOnly)?  '[' bindingIdentifier 'in' (KeyOf)? type ']' (notOptional|optional)? typeAnnotation   // mapped type
+   | (propertySignatureReadOnly)? '[' bindingIdentifier ':' 'string' ']' typeAnnotation
+   | (propertySignatureReadOnly)? '[' bindingIdentifier ':' 'number' ']' typeAnnotation
    ;
 
 unionOrIntersectionOrPrimaryType:
@@ -178,6 +190,7 @@ primaryType:
    | tupleType
    | typeQuery
    | thisType
+   	| inferredType    // Only appears in conditional types
 	| StringLiteral   // No idea what's going on there, but this does show up
 	| NumericLiteral   // No idea what's going on there, but this does show up
 	;
@@ -185,6 +198,7 @@ primaryType:
 primaryTypeIndexable:
 	'[' ']'  // arrayType
 	| '[' typeReference ']' // New rule by me for indexed access operator
+	| '[' KeyOf typeReference ']' // New rule by me for indexed access operator or map types
 	;
 
 parenthesizedType:
@@ -274,15 +288,22 @@ constructSignature:
 
 
 functionType:
-   (typeParameters)? '(' (parameterList)? ')' '=>' type
+   (typeParameters)? '(' (parameterList)? ')' '=>' (type | booleanTypeGuard)
    ;
 
 constructorType:
    'new' (typeParameters)? '(' (parameterList)? ')' '=>' type
    ;
 
+conditionalType:
+	bindingIdentifier 'extends' type '?' type ':' type 
+	;
+
 thisType:
    'this' ;
+
+inferredType:
+	'infer' type;
 
 typeQuery:
    'typeof' typeQueryExpression ;
@@ -313,7 +334,7 @@ ambientDeclaration:
    | 'declare' ambientFunctionDeclaration
 //   | 'declare' ambientClassDeclaration
 //   | 'declare' ambientEnumDeclaration
-//   | 'declare' ambientNamespaceDeclaration
+   | 'declare' ambientNamespaceDeclaration
    ;
    
 ambientVariableDeclaration:
@@ -334,6 +355,35 @@ ambientBinding:
 ambientFunctionDeclaration:
 	'function' bindingIdentifier callSignature ';'
 	;   
+
+ambientNamespaceDeclaration:
+   'namespace' identifierPath '{' ambientNamespaceBody '}'
+   ;
+
+ambientNamespaceBody:
+   (ambientNamespaceElements)?
+   ;
+
+ambientNamespaceElements:
+   (ambientNamespaceElement)+
+//   | ambientNamespaceElements ambientNamespaceElement
+   ;
+
+ambientNamespaceElement:
+   ('export')? ambientVariableDeclaration
+//   | ('export')? ambientLexicalDeclaration
+   | ('export')? ambientFunctionDeclaration
+//   | ('export')? ambientClassDeclaration
+   | ('export')? interfaceDeclaration
+//   | ('export')? ambientEnumDeclaration
+   | ('export')? ambientNamespaceDeclaration
+//   | ('export')? importAliasDeclaration
+   ;
+
+identifierPath:
+   bindingIdentifier
+   | identifierPath '.' bindingIdentifier
+	;
 
 WS: [ \t\r\n]+ -> skip ;
 

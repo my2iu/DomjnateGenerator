@@ -17,15 +17,23 @@ public class DomjnateGenerator
    {
       ApiGenerator generator = new ApiGenerator();
       generator.outputDir = outputDir;
-      go(CharStreams.fromFileName("idl/lib.dom.d.ts"), generator);
+      go(new CharStream[] {
+            CharStreams.fromFileName("idl/lib.dom.d.ts"),     
+//            CharStreams.fromFileName("idl/lib.es5.d.ts"),     
+//            CharStreams.fromFileName("idl/lib.es2015.promise.d.ts"),     
+//            CharStreams.fromFileName("idl/lib.es2015.symbol.d.ts"),     
+      }, generator);
    }
 
-   public void go(CharStream input, ApiGenerator generator) throws IOException
+   public void go(CharStream[] inputStreams, ApiGenerator generator) throws IOException
    {
       // Read out type information for DOM
       ApiDefinition api = new ApiDefinition();
-      TsIdlParser.DeclarationSourceFileContext libDomTs = TsDeclarationsReader.parseTs(input);
-      libDomTs.accept(new TsDeclarationsReader.TopLevelReader(api));
+      for (CharStream input: inputStreams)
+      {
+         TsIdlParser.DeclarationSourceFileContext libDomTs = TsDeclarationsReader.parseTs(input);
+         libDomTs.accept(new TsDeclarationsReader.TopLevelReader(api));
+      }
       
       // Apply changes
       fixupApi(api);
@@ -40,8 +48,9 @@ public class DomjnateGenerator
       // Ignore the fact that objects can be used for event listeners and allow for lambdas only
       TypeReference eventListenerOnly = new TypeReference();
       eventListenerOnly.typeName = "EventListener";
-      System.err.println(api.typeAliases.get("EventListenerOrEventListenerObject"));
       api.typeAliases.put("EventListenerOrEventListenerObject", eventListenerOnly);
+      
+      // 
    }
 
 
