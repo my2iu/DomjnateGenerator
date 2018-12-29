@@ -1,0 +1,14 @@
+package test.pkg;
+
+import jsinterop.annotations.JsType;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsProperty;
+
+@JsType(isNative=true,name="Test")
+public interface Test
+{
+@JsMethod(name="method")
+<K extends Node,T extends Node> void method(K a, T b);
+@JsMethod(name="method2")
+void method2(GenericIntf<Double, Double> b);
+}

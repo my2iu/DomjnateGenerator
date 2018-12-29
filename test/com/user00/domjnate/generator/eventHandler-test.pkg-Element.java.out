@@ -7,10 +7,10 @@ import jsinterop.annotations.JsProperty;
 @JsType(isNative=true,name="Element")
 public interface Element
 {
-// TODO: Suppressing addEventListener with typed events
+// TODO: Suppressing generic keyof type parameter for addEventListener
 @JsMethod(name="addEventListener")
 void addEventListener(String type, EventListener listener);
-// TODO: Suppressing removeEventListener with typed events
+// TODO: Suppressing generic keyof type parameter for removeEventListener
 @JsMethod(name="removeEventListener")
 void removeEventListener(String type, EventListener listener);
 }

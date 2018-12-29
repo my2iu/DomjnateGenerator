@@ -20,6 +20,7 @@ import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
+import com.user00.domjnate.generator.ast.TypeQueryType;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.ast.UnionType;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
@@ -38,11 +39,15 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureConte
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RestParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeAliasDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentListContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentsContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeMemberContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParametersContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeQueryContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeReferenceContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.UnionOrIntersectionOrPrimaryTypeContext;
 
@@ -121,6 +126,15 @@ public class TsDeclarationsReader
          return ctx.primaryType().accept(this);
       }
       
+      @Override public TypeQueryType visitTypeQuery(TypeQueryContext ctx) {
+         if (ctx.typeQueryExpression().identifierReference() == null)
+            return null;
+         String typeName = ctx.typeQueryExpression().identifierReference().getText();
+         TypeQueryType typeof = new TypeQueryType();
+         typeof.simpleType = typeName;
+         return typeof;
+      }
+      
       @Override public TypeReference visitTypeReference(TypeReferenceContext ctx) {
          TypeReference ref = new TypeReference();
          String typeName = ctx.typeName().identifierReference().getText();
@@ -132,7 +146,10 @@ public class TsDeclarationsReader
          }
          ref.typeName = typeName;
          if (ctx.typeArguments() != null)
-            ref.problems.add("Unhandled type arguments on " + ref.typeName);
+         {
+            List<Type> typeArgs = ctx.typeArguments().accept(TYPE_ARGUMENTS_READER);
+            ref.typeArgs = typeArgs;
+         }
          return ref;
       };
    };
@@ -144,6 +161,28 @@ public class TsDeclarationsReader
          return type;
       return new ErrorType("Could not parse type " + ctx.getText());
    }
+
+   static TsIdlBaseVisitor<List<Type>> TYPE_ARGUMENTS_READER = new TsIdlBaseVisitor<List<Type>>() {
+      @Override
+      public List<Type> visitTypeArguments(TypeArgumentsContext ctx) {
+         return ctx.typeArgumentList().accept(this);
+      }
+      @Override
+      public List<Type> visitTypeArgumentList(TypeArgumentListContext ctx) {
+         List<Type> genericParams = new ArrayList<>();
+         if (ctx.typeArgumentList() != null)
+         {
+            genericParams.addAll(ctx.typeArgumentList().accept(this));
+         }
+         genericParams.addAll(ctx.typeArgument().accept(this));
+         return genericParams;
+      }
+      @Override
+      public List<Type> visitTypeArgument(TypeArgumentContext ctx) {
+         return Collections.singletonList(parseType(ctx.type()));
+      }
+      
+   };
 
    static TsIdlBaseVisitor<List<GenericParameter>> TYPE_PARAMETERS_READER = new TsIdlBaseVisitor<List<GenericParameter>>() {
       public List<GenericParameter> visitTypeParameters(TypeParametersContext ctx) {

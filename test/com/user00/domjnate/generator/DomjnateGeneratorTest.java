@@ -83,4 +83,13 @@ public class DomjnateGeneratorTest
       files.compareWithTestFiles(4, this.getClass(), "eventHandler", ".out");
    }
 
+   @Test
+   public void testGeneric() throws IOException
+   {
+      // Special handling of event handlers
+      TestGeneratorFileOutputManagerHelper files = new TestGeneratorFileOutputManagerHelper();
+      generateFilesFromTs(files, "generic.d.ts.in");
+      files.compareWithTestFiles(2, this.getClass(), "generic", ".out");
+   }
+
 }

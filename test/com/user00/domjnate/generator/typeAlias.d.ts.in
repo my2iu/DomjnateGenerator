@@ -13,4 +13,5 @@ type Listener = Test | TestObject;
 interface Source
 {
 	addListener(a:Listener) : void;
+	Test: typeof Test;
 }

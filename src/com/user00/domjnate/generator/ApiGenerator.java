@@ -15,11 +15,13 @@ import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.ProblemTracker;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
+import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.Type.TypeVisitor;
+import com.user00.domjnate.generator.ast.TypeQueryType;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.ast.UnionType;
 
@@ -88,6 +90,20 @@ public class ApiGenerator
             if (api.typeAliases.containsKey(type.typeName))
             {
                return typeString(api.typeAliases.get(type.typeName), nullable);
+            }
+            if (type.typeArgs != null)
+            {
+               String ref = type.typeName;
+               ref += "<";
+               boolean isFirst = true;
+               for (Type typeArg: type.typeArgs)
+               {
+                  if (!isFirst) ref += ", ";
+                  isFirst = false;
+                  ref += typeString(typeArg, true);
+               }
+               ref += ">";
+               return ref;
             }
             return type.typeName;
          }
@@ -189,6 +205,11 @@ public class ApiGenerator
          
          for (PropertyDefinition prop: intf.properties)
          {
+            if (prop.type != null && prop.type instanceof TypeQueryType)
+            {
+               out.println("// TODO: Suppressing property with type query type " + prop.name);
+               continue;
+            }
             String type = "Object";
             if (prop.type != null)
             {
@@ -219,18 +240,28 @@ public class ApiGenerator
 
    private void generateMethod(PrintWriter out, PropertyDefinition method)
    {
-      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
-      {
-         out.println("// TODO: Suppressing addEventListener with typed events");
-         return;
-      }
-      if ("removeEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
-      {
-         out.println("// TODO: Suppressing removeEventListener with typed events");
-         return;
-      }
+//      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
+//      {
+//         out.println("// TODO: Suppressing addEventListener with typed events");
+//         return;
+//      }
+//      if ("removeEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
+//      {
+//         out.println("// TODO: Suppressing removeEventListener with typed events");
+//         return;
+//      }
       if (method.callSigType.genericTypeParameters != null)
-         out.println("Unhandled type parameters on method");
+      {
+         // Ignore keyof generic type parameters for now
+         for (GenericParameter generic: method.callSigType.genericTypeParameters)
+         {
+            if (generic.simpleExtendsKeyOf != null)
+            {
+               out.println("// TODO: Suppressing generic keyof type parameter for " + method.name);
+               return;
+            }
+         }
+      }
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
          generateMethodWithOptionals(out, method.name, method.callSigType, method.problems, n, true);
@@ -243,6 +274,23 @@ public class ApiGenerator
 
       if (withJsMethodAnnotation)
          out.println(String.format("@JsMethod(name=\"%1$s\")", methodName));
+      if (callSigType.genericTypeParameters != null)
+      {
+         out.print("<");
+         boolean isFirst = true;
+         for (GenericParameter generic: callSigType.genericTypeParameters)
+         {
+            if (generic.simpleExtendsKeyOf != null)
+               throw new IllegalArgumentException("generic keyof parameters should have been filtered out previously");
+            if (!isFirst)
+               out.print(",");
+            isFirst = false;
+            out.print(generic.name);
+            out.print(" extends ");
+            out.print(generic.simpleExtends);
+         }         
+         out.print("> ");
+      }
       out.print(returnType + " ");
       out.print(methodName(methodName));
       out.print("(");
