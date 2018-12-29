@@ -55,15 +55,11 @@ public class DomjnateGenerator
       api.typeAliases.put("EventListenerOrEventListenerObject", eventListenerOnly);
 
       // Remove some extra getElementsByTagNameNS() methods on Element
-      List<PropertyDefinition> toRemove = new ArrayList<>();
-      for (PropertyDefinition method: api.interfaces.get("Element").methods)
-      {
-         if ("getElementsByTagNameNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType)
-         {
-            toRemove.add(method);
-         }
-      }
-      api.interfaces.get("Element").methods.removeAll(toRemove);
+      api.interfaces.get("Element").methods.removeIf(
+            method -> "getElementsByTagNameNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
+      
+      // SVGElement.className is deprecated, and it conflicts with Element.className
+      api.interfaces.get("SVGElement").properties.removeIf( p -> "className".equals(p.name));
       
       // Remove the String type
       api.interfaces.remove("String");
