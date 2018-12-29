@@ -11,4 +11,6 @@ public interface Test
 <K extends Node,T extends Node> void method(K a, T b);
 @JsMethod(name="method2")
 void method2(GenericIntf<Double, Double> b);
+@JsMethod(name="promiseVoid")
+Promise<Void> promiseVoid();
 }

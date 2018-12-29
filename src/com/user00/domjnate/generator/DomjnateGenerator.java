@@ -1,11 +1,15 @@
 package com.user00.domjnate.generator;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.ErrorType;
+import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.tsparser.TsDeclarationsReader;
 import com.user00.domjnate.generator.tsparser.TsIdlParser;
@@ -49,6 +53,17 @@ public class DomjnateGenerator
       TypeReference eventListenerOnly = new TypeReference();
       eventListenerOnly.typeName = "EventListener";
       api.typeAliases.put("EventListenerOrEventListenerObject", eventListenerOnly);
+
+      // Remove some extra getElementsByTagNameNS() methods on Element
+      List<PropertyDefinition> toRemove = new ArrayList<>();
+      for (PropertyDefinition method: api.interfaces.get("Element").methods)
+      {
+         if ("getElementsByTagNameNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType)
+         {
+            toRemove.add(method);
+         }
+      }
+      api.interfaces.get("Element").methods.removeAll(toRemove);
       
       // Remove the String type
       api.interfaces.remove("String");

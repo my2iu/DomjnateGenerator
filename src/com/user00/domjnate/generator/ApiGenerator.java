@@ -80,7 +80,7 @@ public class ApiGenerator
             case "number": type = nullable ? "Double" : "double"; break;
             case "string": type = "String"; break;
             case "boolean": type = nullable ? "Boolean" : "boolean"; break;
-            case "void": type = "void"; break;
+            case "void": type = nullable ? "Void" : "void"; break;
             default: type = "unknown"; break;
             }
             return type;

@@ -6,4 +6,5 @@ interface Test
 {
 	method<K extends Node, T extends Node>(a : K, b: T) : void;
 	method2(b : GenericIntf<number, number>) : void;
+	promiseVoid () : Promise<void>; 
 }
