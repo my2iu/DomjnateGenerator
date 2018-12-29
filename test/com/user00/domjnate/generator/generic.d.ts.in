@@ -1,4 +1,4 @@
-interface GenericIntf<T, Z>
+interface GenericIntf<T, Z extends Node>
 {
 }
 

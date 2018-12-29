@@ -529,7 +529,10 @@ public class TsDeclarationsReader
             intf.extendsTypes = extendsReader.types;
          }
          if (ctx.typeParameters() != null)
-            intf.problems.add("Unhandled generics " + ctx.typeParameters().getText());
+         {
+            List<GenericParameter> typeParams = ctx.typeParameters().accept(TYPE_PARAMETERS_READER);
+            intf.genericTypeParams = typeParams;
+         }
          
          if (ctx.objectType().typeBody() != null)
             ctx.objectType().typeBody().accept(new TypeBodyReader(intf));

@@ -8,6 +8,7 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
@@ -187,6 +188,10 @@ public class ApiGenerator
          
          out.println(String.format("@JsType(isNative=true,name=\"%1$s\")", name));
          out.print(String.format("public interface %1$s", name));
+         if (intf.genericTypeParams != null)
+         {
+            generateGenericTypeParams(out, intf.genericTypeParams);
+         }
          if (intf.extendsTypes != null)
          {
             out.print(" extends ");
@@ -238,6 +243,28 @@ public class ApiGenerator
       });
    }
 
+   private void generateGenericTypeParams(PrintWriter out, List<GenericParameter> genericTypeParameters)
+   {
+      out.print("<");
+      boolean isFirst = true;
+      for (GenericParameter generic: genericTypeParameters)
+      {
+         if (generic.simpleExtendsKeyOf != null)
+            throw new IllegalArgumentException("generic keyof parameters should have been filtered out previously");
+         if (!isFirst)
+            out.print(",");
+         isFirst = false;
+         out.print(generic.name);
+         if (generic.simpleExtends != null)
+         {
+            out.print(" extends ");
+            out.print(generic.simpleExtends);
+         }
+      }         
+      out.print("> ");
+
+   }
+   
    private void generateMethod(PrintWriter out, PropertyDefinition method)
    {
 //      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
@@ -276,20 +303,7 @@ public class ApiGenerator
          out.println(String.format("@JsMethod(name=\"%1$s\")", methodName));
       if (callSigType.genericTypeParameters != null)
       {
-         out.print("<");
-         boolean isFirst = true;
-         for (GenericParameter generic: callSigType.genericTypeParameters)
-         {
-            if (generic.simpleExtendsKeyOf != null)
-               throw new IllegalArgumentException("generic keyof parameters should have been filtered out previously");
-            if (!isFirst)
-               out.print(",");
-            isFirst = false;
-            out.print(generic.name);
-            out.print(" extends ");
-            out.print(generic.simpleExtends);
-         }         
-         out.print("> ");
+         generateGenericTypeParams(out, callSigType.genericTypeParameters);
       }
       out.print(returnType + " ");
       out.print(methodName(methodName));

@@ -4,8 +4,7 @@ import jsinterop.annotations.JsType;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
-Unhandled generics <T,Z>
 @JsType(isNative=true,name="GenericIntf")
-public interface GenericIntf
+public interface GenericIntf<T,Z extends Node> 
 {
 }
