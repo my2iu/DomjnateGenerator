@@ -166,9 +166,9 @@ type:
 notOptional: '-?' ;   
 
 indexSignature:
-	(propertySignatureReadOnly)?  '[' bindingIdentifier 'in' (KeyOf)? type ']' (notOptional|optional)? typeAnnotation   // mapped type
-   | (propertySignatureReadOnly)? '[' bindingIdentifier ':' 'string' ']' typeAnnotation
-   | (propertySignatureReadOnly)? '[' bindingIdentifier ':' 'number' ']' typeAnnotation
+	(propertySignatureReadOnly)?  '[' bindingIdentifier 'in' (KeyOf)? type ']' (notOptional|optional)? typeAnnotation   # indexSignatureMapped // mapped type
+   | (propertySignatureReadOnly)? '[' bindingIdentifier ':' 'string' ']' typeAnnotation # indexSignatureString
+   | (propertySignatureReadOnly)? '[' bindingIdentifier ':' 'number' ']' typeAnnotation # indexSignatureNumber
    ;
 
 unionOrIntersectionOrPrimaryType:

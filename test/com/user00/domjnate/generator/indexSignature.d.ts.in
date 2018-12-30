@@ -1,0 +1,5 @@
+interface Test
+{
+	readonly [ a : number ] : Node;
+	[ a : string ] : number;
+}

@@ -16,6 +16,8 @@ public class InterfaceDefinition
    public List<PropertyDefinition> methods = new ArrayList<>();
    public List<CallSignatureDefinition> callSignatures = new ArrayList<>();
    
+   public List<IndexSignatureDefinition> indexSignatures = new ArrayList<>();
+   
    public ProblemTracker problems = new ProblemTracker();
    
    public boolean isFunction()

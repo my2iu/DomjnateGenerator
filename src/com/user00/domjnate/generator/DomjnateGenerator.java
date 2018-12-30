@@ -55,12 +55,26 @@ public class DomjnateGenerator
       api.typeAliases.put("EventListenerOrEventListenerObject", eventListenerOnly);
 
       // Remove some extra getElementsByTagNameNS() methods on Element
-      api.interfaces.get("Element").methods.removeIf(
-            method -> "getElementsByTagNameNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
+      if (api.interfaces.containsKey("Element"))
+      {
+         api.interfaces.get("Element").methods.removeIf(
+               method -> "getElementsByTagNameNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
+      }
+
+      // Remove some extra createEvent() and createElementNS() methods on Document
+      if (api.interfaces.containsKey("Document"))
+      {
+         api.interfaces.get("Document").methods.removeIf(
+               method -> "createElementNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
+         api.interfaces.get("Document").methods.removeIf(
+               method -> "createEvent".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
+      }
       
       // SVGElement.className is deprecated, and it conflicts with Element.className
-      api.interfaces.get("SVGElement").properties.removeIf( p -> "className".equals(p.name));
-      
+      if (api.interfaces.containsKey("SVGElement"))
+      {
+         api.interfaces.get("SVGElement").properties.removeIf( p -> "className".equals(p.name));
+      }
       // Remove the String type
       api.interfaces.remove("String");
    }

@@ -17,6 +17,7 @@ import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.ProblemTracker;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.GenericParameter;
+import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
@@ -182,6 +183,7 @@ public class ApiGenerator
          out.println("import jsinterop.annotations.JsType;");
          out.println("import jsinterop.annotations.JsMethod;");
          out.println("import jsinterop.annotations.JsProperty;");
+         out.println("import jsinterop.annotations.JsOverlay;");
          out.println();
 
          intf.problems.dump(out);
@@ -233,6 +235,19 @@ public class ApiGenerator
          for (PropertyDefinition method: intf.methods)
          {
             generateMethod(out, method);
+         }
+         for (IndexSignatureDefinition idxSig: intf.indexSignatures)
+         {
+            String returnType = typeString(idxSig.returnType, false);
+            out.println("@JsOverlay");
+            if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("number"))
+            {
+               out.println(String.format("public default %1s get(double %2s) {", returnType, idxSig.indexName));
+               out.println(String.format("  return (%1s)com.user00.domjnate.util.Js.get(%2s);", returnType, idxSig.indexName));
+               out.println("}");
+            }
+            else
+               out.println("Unhandled index signature on interface");
          }
          for (CallSignatureDefinition call: intf.callSignatures)
          {

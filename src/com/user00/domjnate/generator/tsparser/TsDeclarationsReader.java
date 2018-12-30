@@ -16,6 +16,7 @@ import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.ErrorType;
 import com.user00.domjnate.generator.ast.GenericParameter;
+import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
@@ -26,6 +27,10 @@ import com.user00.domjnate.generator.ast.UnionType;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureMappedContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureNumberContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureStringContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceDeclarationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceExtendsClauseContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IntersectionOrPrimaryTypeContext;
@@ -415,7 +420,7 @@ public class TsDeclarationsReader
          if (ctx.constructSignature() != null)
             intf.problems.add("Unhandled construct signature");
          if (ctx.indexSignature() != null)
-            intf.problems.add("Unhandled index signature");
+            ctx.indexSignature().accept(this);
          if (ctx.methodSignature() != null)
             ctx.methodSignature().accept(this);
          if (ctx.propertySignature() != null)
@@ -483,7 +488,36 @@ public class TsDeclarationsReader
          intf.properties.add(prop);
          return null;
       }
-      
+
+      @Override
+      public Void visitIndexSignatureMapped(IndexSignatureMappedContext ctx)
+      {
+         intf.problems.add("Unhandled index signature mapped");
+         return null;
+      }
+
+      @Override
+      public Void visitIndexSignatureString(IndexSignatureStringContext ctx)
+      {
+         intf.problems.add("Unhandled index signature string");
+         return null;
+      }
+
+      @Override
+      public Void visitIndexSignatureNumber(IndexSignatureNumberContext ctx)
+      {
+         IndexSignatureDefinition idxSig = new IndexSignatureDefinition();
+         idxSig.indexName = ctx.bindingIdentifier().getText();
+         idxSig.readOnly = ctx.propertySignatureReadOnly() != null;
+         PredefinedType numberType = new PredefinedType();
+         numberType.type = "number";
+         idxSig.indexType = numberType;
+         if (ctx.typeAnnotation() != null)
+            idxSig.returnType = parseType(ctx.typeAnnotation().type());
+         intf.indexSignatures.add(idxSig);
+         return null;
+      }
+
       @Override
       public Void visitCallSignature(CallSignatureContext ctx)
       {
