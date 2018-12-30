@@ -181,7 +181,7 @@ public class ApiGenerator
          Collections.sort(importList);
          for (String imported: importList)
          {
-            outmain.println(String.format("import %1s;", imported));
+            outmain.println(String.format("import %1$s;", imported));
          }
          outmain.println();
 
@@ -261,12 +261,19 @@ public class ApiGenerator
             {
                String returnType = typeString(idxSig.returnType, false);
                imports.add("jsinterop.annotations.JsOverlay");
-               out.println("@JsOverlay");
                if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("number"))
                {
-                  out.println(String.format("public default %1s get(double %2s) {", returnType, idxSig.indexName));
-                  out.println(String.format("  return (%1s)com.user00.domjnate.util.Js.get(%2s);", returnType, idxSig.indexName));
+                  out.println("@JsOverlay");
+                  out.println(String.format("public default %1$s get(double %2$s) {", returnType, idxSig.indexName));
+                  out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.get(%2$s);", returnType, idxSig.indexName));
                   out.println("}");
+                  if (!idxSig.readOnly) 
+                  {
+                     out.println("@JsOverlay");
+                     out.println(String.format("public default void set(double %2$s, %1$s val) {", returnType, idxSig.indexName));
+                     out.println(String.format("  com.user00.domjnate.util.Js.set(%2$s, val);", returnType, idxSig.indexName));
+                     out.println("}");
+                  }
                }
                else
                   out.println("Unhandled index signature on interface");
@@ -291,7 +298,7 @@ public class ApiGenerator
          Collections.sort(importList);
          for (String imported: importList)
          {
-            outmain.println(String.format("import %1s;", imported));
+            outmain.println(String.format("import %1$s;", imported));
          }
          outmain.println();
 
