@@ -5,10 +5,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
@@ -132,39 +137,55 @@ public class ApiGenerator
 
    void generateFunctionInterface(InterfaceDefinition intf) throws IOException
    {
+      Set<String> imports = new HashSet<>();
+
       String name = intf.name;
-      files.makeFile(outputDir, pkg, name, (out) -> {
-         out.println(String.format("package %1$s;", pkg));
-         out.println();
-         out.println("import jsinterop.annotations.JsFunction;");
-         out.println("import jsinterop.annotations.JsType;");
-         out.println("import jsinterop.annotations.JsMethod;");
-         out.println("import jsinterop.annotations.JsProperty;");
-         out.println();
-
-         intf.problems.dump(out);
-         
-         out.println("@JsFunction");
-         out.print(String.format("public interface %1$s", name));
-         if (intf.extendsTypes != null)
-         {
-            out.println("Unhandled extends on a function interface");
-         }
-         out.println();
-         out.println("{");
-         
-         for (CallSignatureDefinition call: intf.callSignatures)
-         {
-            if (call.genericTypeParameters != null)
-               out.println("Unhandled type parameters on function interface call signature");
-            for (int n = 0; n <= call.optionalParams.size(); n++)
+      files.makeFile(outputDir, pkg, name, (outmain) -> {
+         String body;
+         try (StringWriter stringWriter = new StringWriter();
+               PrintWriter out = new PrintWriter(stringWriter)) {
+            intf.problems.dump(out);
+            
+            imports.add("jsinterop.annotations.JsFunction");
+            out.println("@JsFunction");
+            out.print(String.format("public interface %1$s", name));
+            if (intf.extendsTypes != null)
             {
-               generateMethodWithOptionals(out, "accept", call, null, n, false);
+               out.println("Unhandled extends on a function interface");
             }
-
+            out.println();
+            out.println("{");
+            
+            for (CallSignatureDefinition call: intf.callSignatures)
+            {
+               if (call.genericTypeParameters != null)
+                  out.println("Unhandled type parameters on function interface call signature");
+               for (int n = 0; n <= call.optionalParams.size(); n++)
+               {
+                  generateMethodWithOptionals(out, "accept", call, null, n, false);
+               }
+   
+            }
+            
+            out.println("}");
+            body = stringWriter.toString();
+         }
+         catch (IOException e)
+         {
+            throw new IllegalArgumentException(e);
          }
          
-         out.println("}");
+         outmain.println(String.format("package %1$s;", pkg));
+         outmain.println();
+         List<String> importList = new ArrayList<>(imports);
+         Collections.sort(importList);
+         for (String imported: importList)
+         {
+            outmain.println(String.format("import %1s;", imported));
+         }
+         outmain.println();
+
+         outmain.print(body);
       });
       
    }
@@ -177,84 +198,105 @@ public class ApiGenerator
          return;
       }
       String name = intf.name;
-      files.makeFile(outputDir, pkg, name, (out) -> {
-         out.println(String.format("package %1$s;", pkg));
-         out.println();
-         out.println("import jsinterop.annotations.JsType;");
-         out.println("import jsinterop.annotations.JsMethod;");
-         out.println("import jsinterop.annotations.JsProperty;");
-         out.println("import jsinterop.annotations.JsOverlay;");
-         out.println();
-
-         intf.problems.dump(out);
+      files.makeFile(outputDir, pkg, name, (outmain) -> {
+         String intfBody;
+         Set<String> imports = new HashSet<>();
          
-         out.println(String.format("@JsType(isNative=true,name=\"%1$s\")", name));
-         out.print(String.format("public interface %1$s", name));
-         if (intf.genericTypeParams != null)
-         {
-            generateGenericTypeParams(out, intf.genericTypeParams);
-         }
-         if (intf.extendsTypes != null)
-         {
-            out.print(" extends ");
-            boolean isFirst = true;
-            for (TypeReference typeRef: intf.extendsTypes)
-            {
-               if (!isFirst)
-                  out.print(", ");
-               isFirst = false;
-               out.print(typeString(typeRef, false));
-               typeRef.problems.dump(out);
-            }
-         }
-         out.println();
-         out.println("{");
-         
-         for (PropertyDefinition prop: intf.properties)
-         {
-            if (prop.type != null && prop.type instanceof TypeQueryType)
-            {
-               out.println("// TODO: Suppressing property with type query type " + prop.name);
-               continue;
-            }
-            String type = "Object";
-            if (prop.type != null)
-            {
-               type = typeString(prop.type, prop.optional);
-               prop.type.problems.dump(out);
-            }
-            out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
-            out.println(String.format("%2$s %1$s();", getterName(prop.name), type));
+         try (StringWriter stringWriter = new StringWriter();
+               PrintWriter out = new PrintWriter(stringWriter)) {
+            intf.problems.dump(out);
             
-            if (!prop.readOnly)
+            imports.add("jsinterop.annotations.JsType");
+            out.println(String.format("@JsType(isNative=true,name=\"%1$s\")", name));
+            out.print(String.format("public interface %1$s", name));
+            if (intf.genericTypeParams != null)
             {
+               generateGenericTypeParams(out, intf.genericTypeParams);
+            }
+            if (intf.extendsTypes != null)
+            {
+               out.print(" extends ");
+               boolean isFirst = true;
+               for (TypeReference typeRef: intf.extendsTypes)
+               {
+                  if (!isFirst)
+                     out.print(", ");
+                  isFirst = false;
+                  out.print(typeString(typeRef, false));
+                  typeRef.problems.dump(out);
+               }
+            }
+            out.println();
+            out.println("{");
+            
+            for (PropertyDefinition prop: intf.properties)
+            {
+               if (prop.type != null && prop.type instanceof TypeQueryType)
+               {
+                  out.println("// TODO: Suppressing property with type query type " + prop.name);
+                  continue;
+               }
+               String type = "Object";
+               if (prop.type != null)
+               {
+                  type = typeString(prop.type, prop.optional);
+                  prop.type.problems.dump(out);
+               }
+               imports.add("jsinterop.annotations.JsProperty");
                out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
-               out.println(String.format("void %1$s(%2$s val);", setterName(prop.name), type));
+               out.println(String.format("%2$s %1$s();", getterName(prop.name), type));
+               
+               if (!prop.readOnly)
+               {
+                  out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
+                  out.println(String.format("void %1$s(%2$s val);", setterName(prop.name), type));
+               }
             }
-         }
-         for (PropertyDefinition method: intf.methods)
-         {
-            generateMethod(out, method);
-         }
-         for (IndexSignatureDefinition idxSig: intf.indexSignatures)
-         {
-            String returnType = typeString(idxSig.returnType, false);
-            out.println("@JsOverlay");
-            if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("number"))
+            for (PropertyDefinition method: intf.methods)
             {
-               out.println(String.format("public default %1s get(double %2s) {", returnType, idxSig.indexName));
-               out.println(String.format("  return (%1s)com.user00.domjnate.util.Js.get(%2s);", returnType, idxSig.indexName));
-               out.println("}");
+               imports.add("jsinterop.annotations.JsMethod");
+               generateMethod(out, method);
             }
-            else
-               out.println("Unhandled index signature on interface");
+            for (IndexSignatureDefinition idxSig: intf.indexSignatures)
+            {
+               String returnType = typeString(idxSig.returnType, false);
+               imports.add("jsinterop.annotations.JsOverlay");
+               out.println("@JsOverlay");
+               if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("number"))
+               {
+                  out.println(String.format("public default %1s get(double %2s) {", returnType, idxSig.indexName));
+                  out.println(String.format("  return (%1s)com.user00.domjnate.util.Js.get(%2s);", returnType, idxSig.indexName));
+                  out.println("}");
+               }
+               else
+                  out.println("Unhandled index signature on interface");
+            }
+            for (CallSignatureDefinition call: intf.callSignatures)
+            {
+               out.println("Unhandled call signature on interface");
+            }
+            
+            out.println("}");
+
+            intfBody = stringWriter.toString();
          }
-         for (CallSignatureDefinition call: intf.callSignatures)
+         catch (IOException e) 
          {
-            out.println("Unhandled call signature on interface");
+            throw new IllegalArgumentException(e);
          }
          
-         out.println("}");
+         outmain.println(String.format("package %1$s;", pkg));
+         outmain.println();
+         List<String> importList = new ArrayList<>(imports);
+         Collections.sort(importList);
+         for (String imported: importList)
+         {
+            outmain.println(String.format("import %1s;", imported));
+         }
+         outmain.println();
+
+         outmain.print(intfBody);
+
       });
    }
 
