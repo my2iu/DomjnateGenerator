@@ -18,6 +18,7 @@ import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.NullableType;
+import com.user00.domjnate.generator.ast.ObjectType;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
@@ -42,6 +43,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.InterfaceExtendsClause
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IntersectionOrPrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.MethodSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.NamespaceNameContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.ObjectTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.OptionalParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ParameterListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PredefinedTypeContext;
@@ -161,6 +163,17 @@ public class TsDeclarationsReader
             ref.typeArgs = typeArgs;
          }
          return ref;
+      };
+      
+      @Override public Type visitObjectType(ObjectTypeContext ctx) {
+         InterfaceDefinition intf = new InterfaceDefinition();
+         
+         if (ctx.typeBody() != null)
+            ctx.typeBody().accept(new TypeBodyReader(intf));
+         
+         ObjectType objType = new ObjectType();
+         objType.intf = intf;
+         return objType;
       };
    };
    

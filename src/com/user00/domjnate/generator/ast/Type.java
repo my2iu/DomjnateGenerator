@@ -27,6 +27,10 @@ public abstract class Type
       {
          return visitType(type);
       }
+      public U visitObjectType(ObjectType type)
+      {
+         return visitType(type);
+      }
       public U visitErrorType(ErrorType type)
       {
          return visitType(type);

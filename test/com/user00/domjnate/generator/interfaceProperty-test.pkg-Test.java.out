@@ -13,9 +13,9 @@ void setA(double val);
 @JsProperty(name="b")
 String getB();
 @JsProperty(name="c")
-Object getC();
+java.lang.Object getC();
 @JsProperty(name="c")
-void setC(Object val);
+void setC(java.lang.Object val);
 @JsProperty(name="d")
 Double getD();
 @JsProperty(name="d")

@@ -7,7 +7,7 @@ import jsinterop.annotations.JsType;
 public interface Test
 {
 @JsMethod(name="method")
-Object method(Object a, Object b);
+java.lang.Object method(java.lang.Object a, java.lang.Object b);
 @JsMethod(name="method2")
 double method2(String a);
 @JsMethod(name="optionalParams")

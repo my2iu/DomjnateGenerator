@@ -26,9 +26,13 @@ import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.NullableType;
+import com.user00.domjnate.generator.ast.ObjectType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.Type.TypeVisitor;
+
+import netscape.javascript.JSObject;
+
 import com.user00.domjnate.generator.ast.TypeQueryType;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.ast.UnionType;
@@ -75,15 +79,15 @@ public class ApiGenerator
    
    String typeString(Type basicType, boolean nullable)
    {
-      if (basicType == null) return "Object";
+      if (basicType == null) return "java.lang.Object";
       return basicType.visit(new TypeVisitor<String>() {
          @Override
          public String visitPredefinedType(PredefinedType basicType)
          {
-            String type = "Object";
+            String type = "java.lang.Object";
             switch(basicType.type)
             {
-            case "any": type = "Object"; break;
+            case "any": type = "java.lang.Object"; break;
             case "number": type = nullable ? "Double" : "double"; break;
             case "string": type = "String"; break;
             case "boolean": type = nullable ? "Boolean" : "boolean"; break;
@@ -131,7 +135,7 @@ public class ApiGenerator
          @Override
          public String visitType(Type type)
          {
-            return "Object";
+            return "java.lang.Object";
          }
       });
    }
@@ -191,6 +195,17 @@ public class ApiGenerator
       
    }
    
+   InterfaceDefinition lookupInterfaceAmbient(String name, Map<String, Type> ambientVars)
+   {
+      Type type = ambientVars.get(name);
+      if (type instanceof ObjectType)
+      {
+         ambientVars.remove(name);
+         return ((ObjectType)type).intf;
+      }
+      return null;
+   }
+   
    void generateInterface(InterfaceDefinition intf) throws IOException
    {
       if (intf.isFunction())
@@ -199,6 +214,13 @@ public class ApiGenerator
          return;
       }
       String name = intf.name;
+      InterfaceDefinition intfAmbient = null;
+      if (api.ambientVars.containsKey(name))
+         intfAmbient = lookupInterfaceAmbient(name, api.ambientVars);
+      else if (api.ambientConsts.containsKey(name))
+         intfAmbient = lookupInterfaceAmbient(name, api.ambientConsts);
+      InterfaceDefinition staticIntf = intfAmbient;
+      
       files.makeFile(outputDir, pkg, name, (outmain) -> {
          String intfBody;
          Set<String> imports = new HashSet<>();
@@ -232,26 +254,7 @@ public class ApiGenerator
             
             for (PropertyDefinition prop: intf.properties)
             {
-               if (prop.type != null && prop.type instanceof TypeQueryType)
-               {
-                  out.println("// TODO: Suppressing property with type query type " + prop.name);
-                  continue;
-               }
-               String type = "Object";
-               if (prop.type != null)
-               {
-                  type = typeString(prop.type, prop.optional);
-                  prop.type.problems.dump(out);
-               }
-               imports.add("jsinterop.annotations.JsProperty");
-               out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
-               out.println(String.format("%2$s %1$s();", getterName(prop.name), type));
-               
-               if (!prop.readOnly)
-               {
-                  out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
-                  out.println(String.format("void %1$s(%2$s val);", setterName(prop.name), type));
-               }
+               makeProperty(out, name, prop, false, imports);
             }
             for (PropertyDefinition method: intf.methods)
             {
@@ -281,38 +284,37 @@ public class ApiGenerator
             }
             for (CallSignatureDefinition construct: intf.constructSignatures)
             {
-               construct.problems.dump(out);
-               imports.add("jsinterop.annotations.JsOverlay");
-               if (construct.params.size() > 0)
-               {
-                  out.println("Unhandled constructor with multiple parameters");
-                  continue;
-               }
-               if (construct.optionalParams.size() > 0)
-               {
-                  out.println("Unhandled constructor with optional parameters");
-                  continue;
-               }
-               if (construct.restParameter != null)
-               {
-                  out.println("Unhandled constructor with rest parameter");
-                  continue;
-               }
-               if (construct.genericTypeParameters != null && construct.genericTypeParameters.size() > 0)
-               {
-                  out.println("Unhandled constructor with generic type parameters");
-                  continue;
-               }
-               String returnType = typeString(construct.returnType, false);
-               out.println("@JsOverlay");
-               out.println(String.format("public default %1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", returnType));
-               out.println(String.format("  java.lang.Object constructor = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getConstructor(\"%1$s\");", returnType));
-               out.println(String.format("  return ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().construct(constructor, %1$s.class);", returnType));
-               out.println("}");
+               makeConstructor(out, construct, false, imports);
             }
             for (CallSignatureDefinition call: intf.callSignatures)
             {
                out.println("Unhandled call signature on interface");
+            }
+       
+            
+            if (staticIntf != null)
+            {
+               staticIntf.problems.dump(out);
+               for (PropertyDefinition prop: staticIntf.properties)
+               {
+                  makeProperty(out, name, prop, true, imports);
+               }
+               for (PropertyDefinition method: staticIntf.methods)
+               {
+                  out.println("Unhandled static method " + method.name);
+               }
+               for (CallSignatureDefinition call: staticIntf.callSignatures)
+               {
+                  out.println("Unhandled static call");
+               }
+               for (CallSignatureDefinition construct: staticIntf.constructSignatures)
+               {
+                  makeConstructor(out, construct, true, imports);
+               }
+               for (IndexSignatureDefinition idxSig: staticIntf.indexSignatures)
+               {
+                  out.println("Unhandled static index");
+               }
             }
             
             out.println("}");
@@ -337,6 +339,84 @@ public class ApiGenerator
          outmain.print(intfBody);
 
       });
+   }
+
+   private void makeConstructor(PrintWriter out, CallSignatureDefinition construct, boolean isStatic, Set<String> imports)
+   {
+      construct.problems.dump(out);
+      imports.add("jsinterop.annotations.JsOverlay");
+      if (construct.params.size() > 0)
+      {
+         out.println("Unhandled constructor with multiple parameters");
+         return;
+      }
+      if (construct.optionalParams.size() > 0)
+      {
+         out.println("Unhandled constructor with optional parameters");
+         return;
+      }
+      if (construct.restParameter != null)
+      {
+         out.println("Unhandled constructor with rest parameter");
+         return;
+      }
+      if (construct.genericTypeParameters != null && construct.genericTypeParameters.size() > 0)
+      {
+         out.println("Unhandled constructor with generic type parameters");
+         return;
+      }
+      String returnType = typeString(construct.returnType, false);
+      out.println("@JsOverlay");
+      out.println(String.format("public %2$s %1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", returnType, isStatic ? "static" : "default"));
+      out.println(String.format("  java.lang.Object constructor = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getConstructor(\"%1$s\");", returnType));
+      out.println(String.format("  return ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().construct(constructor, %1$s.class);", returnType));
+      out.println("}");
+   }
+
+   private void makeProperty(PrintWriter out, String className, PropertyDefinition prop, boolean isStatic, Set<String> imports)
+   {
+      if (prop.type != null && prop.type instanceof TypeQueryType)
+      {
+         out.println("// TODO: Suppressing property with type query type " + prop.name);
+         return;
+      }
+      String type = "java.lang.Object";
+      if (prop.type != null)
+      {
+         type = typeString(prop.type, prop.optional);
+         prop.type.problems.dump(out);
+      }
+      if (!isStatic)
+      {
+         imports.add("jsinterop.annotations.JsProperty");
+         out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
+         out.println(String.format("%2$s %1$s();", getterName(prop.name), type));
+         
+         if (!prop.readOnly)
+         {
+            out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
+            out.println(String.format("void %1$s(%2$s val);", setterName(prop.name), type));
+         }
+      }
+      else
+      {
+         imports.add("jsinterop.annotations.JsOverlay");
+         out.println("@JsOverlay");
+         out.println(String.format("static %2$s %1$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", getterName(prop.name), type));
+         out.println(String.format("  com.user00.domjnate.api.Object obj = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getMember(_win, \"%1$s\", com.user00.domjnate.api.Object.class);", className));
+         out.println(String.format("  return ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getMember(obj, \"%1$s\", %2$s.class);", prop.name, type));
+         out.println("}");
+         
+         if (!prop.readOnly)
+         {
+            if (!prop.name.equals("prototype")) System.out.println("MINGMING" +className);
+            out.println("@JsOverlay");
+            out.println(String.format("static void %1$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, %2$s val) {", setterName(prop.name), type));
+            out.println(String.format("  com.user00.domjnate.api.Object obj = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getMember(_win, \"%1$s\", com.user00.domjnate.api.Object.class);", className));
+            out.println(String.format("  ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().setMember(obj, \"%1$s\", val);", prop.name));
+            out.println("}");
+         }
+      }
    }
 
    private void generateGenericTypeParams(PrintWriter out, List<GenericParameter> genericTypeParameters)
