@@ -16,4 +16,5 @@ declare var Test2 : {
 	prototype : Node;
 };
 
+declare var Test2: typeof Test2;
 declare var Test : TestConstructor;

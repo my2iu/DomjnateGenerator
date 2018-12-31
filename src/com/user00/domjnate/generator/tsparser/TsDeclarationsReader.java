@@ -469,9 +469,37 @@ public class TsDeclarationsReader
          if (ctx.typeAnnotation() != null)
             type = parseType(ctx.typeAnnotation().type());
          if (isConst)
-            api.ambientConsts.put(name, type);
+         {
+            if (api.ambientConsts.containsKey(name))
+            {
+               Type oldType = api.ambientConsts.get(name);
+               // Ignore multiple definitions
+               if (type instanceof TypeQueryType && ((TypeQueryType)type).simpleType.equals(name)) {}
+               else if (type instanceof TypeReference && oldType instanceof TypeReference && type.equals(oldType)) {}
+               else
+               {
+                  api.ambientConsts.put(name, new ErrorType("Multiple declare const definitions for " + name));
+               }
+            }
+            else
+               api.ambientConsts.put(name, type);
+         }
          else
-            api.ambientVars.put(name, type);
+         {
+            if (api.ambientVars.containsKey(name))
+            {
+               Type oldType = api.ambientVars.get(name);
+               // Ignore multiple definitions
+               if (type instanceof TypeQueryType && ((TypeQueryType)type).simpleType.equals(name)) {}
+               else if (type instanceof TypeReference && oldType instanceof TypeReference && type.equals(oldType)) {}
+               else
+               {
+                  api.ambientConsts.put(name, new ErrorType("Multiple declare var definitions for " + name));
+               }
+            }
+            else
+               api.ambientVars.put(name, type);
+         }
          return null;
       }
    }
