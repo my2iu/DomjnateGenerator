@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -444,6 +445,16 @@ public class ApiGenerator
       for (InterfaceDefinition intf: api.interfaces.values())
       {
          generateInterface(intf);
+      }
+      for (Map.Entry<String, Type> entry: api.ambientVars.entrySet())
+      {
+         System.err.println("Unhandled ambient var " + entry.getKey());
+         entry.getValue().problems.dump(System.err);
+      }
+      for (Map.Entry<String, Type> entry: api.ambientConsts.entrySet())
+      {
+         System.err.println("Unhandled ambient const " + entry.getKey());
+         entry.getValue().problems.dump(System.err);
       }
 
       api.problems.dump(System.err);

@@ -6,3 +6,11 @@ interface TestConstructor
 {
 	new() : Test;
 }
+
+interface Test2
+{
+}
+
+declare var Test2 : {
+	new() : Test2;
+};

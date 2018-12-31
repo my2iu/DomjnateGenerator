@@ -11,7 +11,6 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RuleContext;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
-import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.ErrorType;
@@ -19,16 +18,22 @@ import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.NullableType;
+import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.TypeQueryType;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.ast.UnionType;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientBindingContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientBindingListContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientConstDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientLetDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientVarDeclarationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ConstructSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
-import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureMappedContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureNumberContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureStringContext;
@@ -40,7 +45,6 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.NamespaceNameContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.OptionalParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ParameterListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PredefinedTypeContext;
-import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RestParameterContext;
@@ -49,7 +53,6 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeAnnotationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentsContext;
-import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeMemberContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterListContext;
@@ -432,7 +435,34 @@ public class TsDeclarationsReader
          return null;
       }
    }
-   
+
+   static class AmbientVariableReader extends TsIdlBaseVisitor<Void>
+   {
+      boolean isConst;
+      ApiDefinition api;
+//      List<TypeReference> types = new ArrayList<>();
+      
+      @Override
+      public Void visitAmbientBindingList(AmbientBindingListContext ctx)
+      {
+         return super.visitAmbientBindingList(ctx);
+      }
+      
+      @Override
+      public Void visitAmbientBinding(AmbientBindingContext ctx)
+      {
+         String name = ctx.bindingIdentifier().getText();
+         Type type = null;
+         if (ctx.typeAnnotation() != null)
+            type = parseType(ctx.typeAnnotation().type());
+         if (isConst)
+            api.ambientConsts.put(name, type);
+         else
+            api.ambientVars.put(name, type);
+         return null;
+      }
+   }
+
    static class TypeBodyReader extends TsIdlBaseVisitor<Void>
    {
       InterfaceDefinition intf;
@@ -581,7 +611,7 @@ public class TsDeclarationsReader
          if (ctx.interfaceDeclaration() != null)
             ctx.interfaceDeclaration().accept(this);
          else if (ctx.ambientDeclaration() != null)
-            api.problems.add("Unhandled ambient declaration " + ctx.ambientDeclaration().getText());
+            ctx.ambientDeclaration().accept(this);
          else if (ctx.typeAliasDeclaration() != null)
             ctx.typeAliasDeclaration().accept(this);
          return null;
@@ -610,6 +640,51 @@ public class TsDeclarationsReader
          
          if (ctx.objectType().typeBody() != null)
             ctx.objectType().typeBody().accept(new TypeBodyReader(intf));
+         return null;
+      }
+      
+      @Override
+      public Void visitAmbientDeclaration(AmbientDeclarationContext ctx)
+      {
+         if (ctx.ambientVariableDeclaration() != null)
+         {
+            // Check that ambient declaration refers to an interface meaning it's a class, 
+            // otherwise, we've got a global variable
+            ctx.ambientVariableDeclaration().accept(this);
+         }
+         else
+            api.problems.add("Unhandled ambient declaration " + ctx.getText());
+
+         return null;
+      }
+      
+      @Override
+      public Void visitAmbientVarDeclaration(AmbientVarDeclarationContext ctx)
+      {
+         AmbientVariableReader reader = new AmbientVariableReader();
+         reader.isConst = false;
+         reader.api = api;
+         ctx.ambientBindingList().accept(reader);
+         return null;
+      }
+
+      @Override
+      public Void visitAmbientLetDeclaration(AmbientLetDeclarationContext ctx)
+      {
+         AmbientVariableReader reader = new AmbientVariableReader();
+         reader.isConst = false;
+         reader.api = api;
+         ctx.ambientBindingList().accept(reader);
+         return null;
+      }
+
+      @Override
+      public Void visitAmbientConstDeclaration(AmbientConstDeclarationContext ctx)
+      {
+         AmbientVariableReader reader = new AmbientVariableReader();
+         reader.isConst = true;
+         reader.api = api;
+         ctx.ambientBindingList().accept(reader);
          return null;
       }
       

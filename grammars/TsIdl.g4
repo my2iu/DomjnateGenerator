@@ -338,9 +338,9 @@ ambientDeclaration:
    ;
    
 ambientVariableDeclaration:
-   'var' ambientBindingList ';'
-   | 'let' ambientBindingList ';'
-   | 'const' ambientBindingList ';'
+   'var' ambientBindingList ';'   # ambientVarDeclaration
+   | 'let' ambientBindingList ';' # ambientLetDeclaration
+   | 'const' ambientBindingList ';' #ambientConstDeclaration
    ;
 
 ambientBindingList:
