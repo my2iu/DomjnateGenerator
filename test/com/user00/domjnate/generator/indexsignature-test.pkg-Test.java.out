@@ -8,7 +8,7 @@ Unhandled index signature string
 public interface Test
 {
 @JsOverlay
-public default Node get(double  a) {
-  return (Node)com.user00.domjnate.util.Js.get( a);
+public default Node get(double a) {
+  return (Node)com.user00.domjnate.util.Js.get(a);
 }
 }

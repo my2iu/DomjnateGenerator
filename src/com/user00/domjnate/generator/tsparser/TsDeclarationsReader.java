@@ -26,6 +26,7 @@ import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.ast.UnionType;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.ConstructSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureMappedContext;
@@ -44,6 +45,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureConte
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RestParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeAliasDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeAnnotationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentsContext;
@@ -282,15 +284,7 @@ public class TsDeclarationsReader
          // Return type
          if (ctx.typeAnnotation() != null)
          {
-            if (ctx.typeAnnotation().type() != null)
-               sig.returnType = parseType(ctx.typeAnnotation().type());
-            else if (ctx.typeAnnotation().booleanTypeGuard() != null)
-            {
-               // Ignore the type guard properties and just treat the type like a boolean
-               PredefinedType type = new PredefinedType();
-               type.type = "boolean";
-               sig.returnType = type;
-            }
+            readReturnTypeAnnotation(ctx.typeAnnotation());
          }
          
          if (ctx.parameterList() != null)
@@ -300,7 +294,42 @@ public class TsDeclarationsReader
          
          return null;
       }
-      
+
+      @Override
+      public Void visitConstructSignature(ConstructSignatureContext ctx)
+      {
+         if (ctx.typeParameters() != null)
+         {
+            sig.genericTypeParameters = ctx.typeParameters().accept(TYPE_PARAMETERS_READER);
+         }
+         
+         // Return type
+         if (ctx.typeAnnotation() != null)
+         {
+            readReturnTypeAnnotation(ctx.typeAnnotation());
+         }
+         
+         if (ctx.parameterList() != null)
+         {
+            ctx.parameterList().accept(this);
+         }
+         
+         return null;
+      }
+
+      void readReturnTypeAnnotation(TypeAnnotationContext ctx)
+      {
+         if (ctx.type() != null)
+            sig.returnType = parseType(ctx.type());
+         else if (ctx.booleanTypeGuard() != null)
+         {
+            // Ignore the type guard properties and just treat the type like a boolean
+            PredefinedType type = new PredefinedType();
+            type.type = "boolean";
+            sig.returnType = type;
+         }
+      }
+
       @Override
       public Void visitParameterList(ParameterListContext ctx)
       {
@@ -418,7 +447,7 @@ public class TsDeclarationsReader
          if (ctx.callSignature() != null)
             ctx.callSignature().accept(this);
          if (ctx.constructSignature() != null)
-            intf.problems.add("Unhandled construct signature");
+            ctx.constructSignature().accept(this);
          if (ctx.indexSignature() != null)
             ctx.indexSignature().accept(this);
          if (ctx.methodSignature() != null)
@@ -486,6 +515,17 @@ public class TsDeclarationsReader
          }
          
          intf.properties.add(prop);
+         return null;
+      }
+
+      @Override
+      public Void visitConstructSignature(ConstructSignatureContext ctx)
+      {
+         CallSignatureReader call = new CallSignatureReader();
+         ctx.accept(call);
+         
+         intf.constructSignatures.add(call.sig);
+         
          return null;
       }
 

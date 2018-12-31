@@ -1,0 +1,8 @@
+interface Test
+{
+}
+
+interface TestConstructor
+{
+	new() : Test;
+}

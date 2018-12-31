@@ -101,4 +101,13 @@ public class DomjnateGeneratorTest
       files.compareWithTestFiles(1, this.getClass(), "indexsignature", ".out");
    }
 
+   @Test
+   public void testConstruct() throws IOException
+   {
+      // Special handling of event handlers
+      TestGeneratorFileOutputManagerHelper files = new TestGeneratorFileOutputManagerHelper();
+      generateFilesFromTs(files, "construct.d.ts.in");
+      files.compareWithTestFiles(2, this.getClass(), "construct", ".out");
+   }
+
 }

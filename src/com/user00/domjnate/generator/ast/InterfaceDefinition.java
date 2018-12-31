@@ -15,6 +15,7 @@ public class InterfaceDefinition
    public List<PropertyDefinition> properties = new ArrayList<>();
    public List<PropertyDefinition> methods = new ArrayList<>();
    public List<CallSignatureDefinition> callSignatures = new ArrayList<>();
+   public List<CallSignatureDefinition> constructSignatures = new ArrayList<>();
    
    public List<IndexSignatureDefinition> indexSignatures = new ArrayList<>();
    

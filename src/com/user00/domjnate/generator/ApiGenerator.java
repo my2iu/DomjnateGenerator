@@ -278,6 +278,37 @@ public class ApiGenerator
                else
                   out.println("Unhandled index signature on interface");
             }
+            for (CallSignatureDefinition construct: intf.constructSignatures)
+            {
+               construct.problems.dump(out);
+               imports.add("jsinterop.annotations.JsOverlay");
+               if (construct.params.size() > 0)
+               {
+                  out.println("Unhandled constructor with multiple parameters");
+                  continue;
+               }
+               if (construct.optionalParams.size() > 0)
+               {
+                  out.println("Unhandled constructor with optional parameters");
+                  continue;
+               }
+               if (construct.restParameter != null)
+               {
+                  out.println("Unhandled constructor with rest parameter");
+                  continue;
+               }
+               if (construct.genericTypeParameters != null && construct.genericTypeParameters.size() > 0)
+               {
+                  out.println("Unhandled constructor with generic type parameters");
+                  continue;
+               }
+               String returnType = typeString(construct.returnType, false);
+               out.println("@JsOverlay");
+               out.println(String.format("public default %1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", returnType));
+               out.println(String.format("  java.lang.Object constructor = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getConstructor(\"%1$s\");", returnType));
+               out.println(String.format("  return ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().construct(constructor, %1$s.class);", returnType));
+               out.println("}");
+            }
             for (CallSignatureDefinition call: intf.callSignatures)
             {
                out.println("Unhandled call signature on interface");
