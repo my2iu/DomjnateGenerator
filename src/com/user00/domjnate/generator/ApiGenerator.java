@@ -269,13 +269,13 @@ public class ApiGenerator
                {
                   out.println("@JsOverlay");
                   out.println(String.format("public default %1$s get(double %2$s) {", returnType, idxSig.indexName));
-                  out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.get(this, %2$s, %1$s.class);", returnType, idxSig.indexName));
+                  out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getIndex(this, %2$s, %1$s.class);", returnType, idxSig.indexName));
                   out.println("}");
                   if (!idxSig.readOnly) 
                   {
                      out.println("@JsOverlay");
                      out.println(String.format("public default void set(double %2$s, %1$s val) {", returnType, idxSig.indexName));
-                     out.println(String.format("  com.user00.domjnate.util.Js.set(this, %2$s, val);", returnType, idxSig.indexName));
+                     out.println(String.format("  com.user00.domjnate.util.Js.setIndex(this, %2$s, val);", returnType, idxSig.indexName));
                      out.println("}");
                   }
                }
@@ -368,8 +368,8 @@ public class ApiGenerator
       String returnType = typeString(construct.returnType, false);
       out.println("@JsOverlay");
       out.println(String.format("public %2$s %1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", returnType, isStatic ? "static" : "default"));
-      out.println(String.format("  java.lang.Object constructor = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getConstructor(\"%1$s\");", returnType));
-      out.println(String.format("  return ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().construct(constructor, %1$s.class);", returnType));
+      out.println(String.format("  java.lang.Object constructor = com.user00.domjnate.util.Js.getConstructor(_win, \"%1$s\");", returnType));
+      out.println(String.format("  return com.user00.domjnate.util.Js.construct(_win, constructor, %1$s.class);", returnType));
       out.println("}");
    }
 
@@ -403,8 +403,8 @@ public class ApiGenerator
          imports.add("jsinterop.annotations.JsOverlay");
          out.println("@JsOverlay");
          out.println(String.format("public static %2$s %1$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", getterName(prop.name), type));
-         out.println(String.format("  com.user00.domjnate.api.Object obj = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getMember(_win, \"%1$s\", com.user00.domjnate.api.Object.class);", className));
-         out.println(String.format("  return ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getMember(obj, \"%1$s\", %2$s.class);", prop.name, type));
+         out.println(String.format("  com.user00.domjnate.api.Object obj = com.user00.domjnate.util.Js.getMember(_win, \"%1$s\", com.user00.domjnate.api.Object.class);", className));
+         out.println(String.format("  return com.user00.domjnate.util.Js.getMember(obj, \"%1$s\", %2$s.class);", prop.name, type));
          out.println("}");
          
          if (!prop.readOnly)
@@ -412,8 +412,8 @@ public class ApiGenerator
             if (!prop.name.equals("prototype")) System.out.println("MINGMING" +className);
             out.println("@JsOverlay");
             out.println(String.format("public static void %1$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, %2$s val) {", setterName(prop.name), type));
-            out.println(String.format("  com.user00.domjnate.api.Object obj = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getMember(_win, \"%1$s\", com.user00.domjnate.api.Object.class);", className));
-            out.println(String.format("  ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().setMember(obj, \"%1$s\", val);", prop.name));
+            out.println(String.format("  com.user00.domjnate.api.Object obj = com.user00.domjnate.util.Js.getMember(_win, \"%1$s\", com.user00.domjnate.api.Object.class);", className));
+            out.println(String.format("  com.user00.domjnate.util.Js.setMember(obj, \"%1$s\", val);", prop.name));
             out.println("}");
          }
       }
