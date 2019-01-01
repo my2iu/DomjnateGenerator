@@ -9,6 +9,6 @@ public interface Test
 {
 @JsOverlay
 public default Node get(double a) {
-  return (Node)com.user00.domjnate.util.Js.get(a);
+  return (Node)com.user00.domjnate.util.Js.get(this, a, Node.class);
 }
 }

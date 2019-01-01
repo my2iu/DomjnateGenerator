@@ -7,12 +7,12 @@ import jsinterop.annotations.JsType;
 public interface Test2
 {
 @JsOverlay
-static Node getPrototype(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {
+public static Node getPrototype(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {
   com.user00.domjnate.api.Object obj = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getMember(_win, "Test2", com.user00.domjnate.api.Object.class);
   return ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getMember(obj, "prototype", Node.class);
 }
 @JsOverlay
-static void setPrototype(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, Node val) {
+public static void setPrototype(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, Node val) {
   com.user00.domjnate.api.Object obj = ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().getMember(_win, "Test2", com.user00.domjnate.api.Object.class);
   ((com.user00.domjnate.util.JsThunkAccess)_win).__DomjnateGetJsThunk().setMember(obj, "prototype", val);
 }
