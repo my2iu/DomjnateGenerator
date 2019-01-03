@@ -345,32 +345,80 @@ public class ApiGenerator
    {
       construct.problems.dump(out);
       imports.add("jsinterop.annotations.JsOverlay");
-      if (construct.params.size() > 0)
-      {
-         out.println("Unhandled constructor with multiple parameters");
-         return;
-      }
-      if (construct.optionalParams.size() > 0)
-      {
-         out.println("Unhandled constructor with optional parameters");
-         return;
-      }
-      if (construct.restParameter != null)
-      {
-         out.println("Unhandled constructor with rest parameter");
-         return;
-      }
       if (construct.genericTypeParameters != null && construct.genericTypeParameters.size() > 0)
       {
          out.println("Unhandled constructor with generic type parameters");
          return;
       }
-      String returnType = typeString(construct.returnType, false);
+      for (int n = 0; n <= construct.optionalParams.size(); n++)
+      {
+         generateConstructWithOptionals(out, construct, n, isStatic);
+      }
+
+   }
+
+   private void generateConstructWithOptionals(PrintWriter out, CallSignatureDefinition callSigType, int numOptionals, boolean isStatic)
+   {
+      String returnType = typeString(callSigType.returnType, false);
       out.println("@JsOverlay");
-      out.println(String.format("public %2$s %1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", returnType, isStatic ? "static" : "default"));
+      out.print(String.format("public %2$s %1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, isStatic ? "static" : "default"));
+
+//      if (callSigType.genericTypeParameters != null)
+//      {
+//         generateGenericTypeParams(out, callSigType.genericTypeParameters);
+//      }
+      generateMethodParameters(out, callSigType, numOptionals, false, true);
+      out.println(") {");
       out.println(String.format("  java.lang.Object constructor = com.user00.domjnate.util.Js.getConstructor(_win, \"%1$s\");", returnType));
-      out.println(String.format("  return com.user00.domjnate.util.Js.construct(_win, constructor, %1$s.class);", returnType));
+      out.print(String.format("  return com.user00.domjnate.util.Js.construct(_win, constructor, %1$s.class", returnType));
+      generateMethodParameters(out, callSigType, numOptionals, false, false);
+      out.println(");");
       out.println("}");
+
+      callSigType.problems.dump(out);
+      for (CallParameter param: callSigType.params)
+         param.problems.dump(out);
+   }
+
+   private void generateMethodParameters(PrintWriter out, CallSignatureDefinition callSigType, int numOptionals,
+         boolean isFirst, boolean withTypes)
+   {
+      for (CallParameter param: callSigType.params)
+      {
+         if (!isFirst) out.print(", ");
+         isFirst = false;
+         if (withTypes) 
+         {
+            String paramType = typeString(param.type, false);
+            out.print(paramType + " ");
+         }
+         out.print(param.name);
+      }
+      for (int n = 0; n < numOptionals; n++)
+      {
+         CallParameter param = callSigType.optionalParams.get(n);
+         if (!isFirst) out.print(", ");
+         isFirst = false;
+         if (withTypes) 
+         {
+            String paramType = typeString(param.type, false);
+            out.print(paramType + " ");
+         }
+         out.print(param.name);
+      }
+      if (callSigType.restParameter != null)
+      {
+         CallParameter param = callSigType.restParameter;
+         if (!isFirst) out.print(", ");
+         isFirst = false;
+         if (withTypes) 
+         {
+            String paramType = typeString(param.type, false);
+            out.print(paramType);
+         }
+         out.print("... ");
+         out.print(param.name);
+      }
    }
 
    private void makeProperty(PrintWriter out, String className, PropertyDefinition prop, boolean isStatic, Set<String> imports)
@@ -485,32 +533,7 @@ public class ApiGenerator
       out.print(methodName(methodName));
       out.print("(");
       boolean isFirst = true;
-      for (CallParameter param: callSigType.params)
-      {
-         if (!isFirst) out.print(", ");
-         isFirst = false;
-         String paramType = typeString(param.type, false);
-         out.print(paramType + " ");
-         out.print(param.name);
-      }
-      for (int n = 0; n < numOptionals; n++)
-      {
-         CallParameter param = callSigType.optionalParams.get(n);
-         if (!isFirst) out.print(", ");
-         isFirst = false;
-         String paramType = typeString(param.type, false);
-         out.print(paramType + " ");
-         out.print(param.name);
-      }
-      if (callSigType.restParameter != null)
-      {
-         CallParameter param = callSigType.restParameter;
-         if (!isFirst) out.print(", ");
-         isFirst = false;
-         String paramType = typeString(param.type, false);
-         out.print(paramType + "... ");
-         out.print(param.name);
-      }
+      generateMethodParameters(out, callSigType, numOptionals, isFirst, true);
       out.print(");");
       out.println();
       if (methodProblems != null)
