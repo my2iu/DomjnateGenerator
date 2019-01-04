@@ -32,11 +32,11 @@ public static Test2 _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win)
 @JsOverlay
 public static Test2 _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, double a, double... c) {
   java.lang.Object constructor = com.user00.domjnate.util.Js.getConstructor(_win, "Test2");
-  return com.user00.domjnate.util.Js.construct(_win, constructor, Test2.class, a, ... c);
+  return com.user00.domjnate.util.Js.construct(_win, constructor, Test2.class, a, c);
 }
 @JsOverlay
 public static Test2 _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, double a, String b, double... c) {
   java.lang.Object constructor = com.user00.domjnate.util.Js.getConstructor(_win, "Test2");
-  return com.user00.domjnate.util.Js.construct(_win, constructor, Test2.class, a, b, ... c);
+  return com.user00.domjnate.util.Js.construct(_win, constructor, Test2.class, a, b, c);
 }
 }

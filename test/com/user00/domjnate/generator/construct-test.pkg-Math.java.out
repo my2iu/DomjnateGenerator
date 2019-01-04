@@ -1,0 +1,23 @@
+package test.pkg;
+
+import jsinterop.annotations.JsOverlay;
+import jsinterop.annotations.JsType;
+
+@JsType(isNative=true,name="Math")
+public interface Math
+{
+@JsOverlay
+public static double getE(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {
+  com.user00.domjnate.api.Object obj = com.user00.domjnate.util.Js.getMember(_win, "Math", com.user00.domjnate.api.Object.class);
+  return com.user00.domjnate.util.Js.getMember(obj, "E", double.class);
+}
+@JsOverlay
+public static void setE(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, double val) {
+  com.user00.domjnate.api.Object obj = com.user00.domjnate.util.Js.getMember(_win, "Math", com.user00.domjnate.api.Object.class);
+  com.user00.domjnate.util.Js.setMember(obj, "E", val);
+}
+@JsOverlay
+public static double min(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, double... a) {
+  return com.user00.domjnate.util.Js.callStaticMethod(_win, "Math", "min", double.class, a);
+}
+}

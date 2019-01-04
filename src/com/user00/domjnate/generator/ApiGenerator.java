@@ -203,11 +203,24 @@ public class ApiGenerator
          ambientVars.remove(name);
          return ((ObjectType)type).intf;
       }
+      else if (type instanceof TypeReference && api.interfaces.containsKey(((TypeReference)type).typeName))
+      {
+         if (!api.interfaces.get(((TypeReference)type).typeName).doNotGenerateJava)
+         {
+            if (name.equals(((TypeReference)type).typeName))
+               api.interfaces.get(((TypeReference)type).typeName).isStaticOnly = true;
+            else
+               System.err.println("static ambient " + name + " with " + ((TypeReference)type).typeName);
+         }
+         ambientVars.remove(name);
+         return api.interfaces.get(((TypeReference)type).typeName); 
+      }
       return null;
    }
    
    void generateInterface(InterfaceDefinition intf) throws IOException
    {
+      if (intf.doNotGenerateJava) return;
       if (intf.isFunction())
       {
          generateFunctionInterface(intf);
@@ -252,45 +265,47 @@ public class ApiGenerator
             out.println();
             out.println("{");
             
-            for (PropertyDefinition prop: intf.properties)
+            if (!intf.isStaticOnly)
             {
-               makeProperty(out, name, prop, false, imports);
-            }
-            for (PropertyDefinition method: intf.methods)
-            {
-               imports.add("jsinterop.annotations.JsMethod");
-               generateMethod(out, method);
-            }
-            for (IndexSignatureDefinition idxSig: intf.indexSignatures)
-            {
-               String returnType = typeString(idxSig.returnType, false);
-               imports.add("jsinterop.annotations.JsOverlay");
-               if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("number"))
+               for (PropertyDefinition prop: intf.properties)
                {
-                  out.println("@JsOverlay");
-                  out.println(String.format("public default %1$s get(double %2$s) {", returnType, idxSig.indexName));
-                  out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getIndex(this, %2$s, %1$s.class);", returnType, idxSig.indexName));
-                  out.println("}");
-                  if (!idxSig.readOnly) 
+                  makeProperty(out, name, prop, false, imports);
+               }
+               for (PropertyDefinition method: intf.methods)
+               {
+                  imports.add("jsinterop.annotations.JsMethod");
+                  generateMethod(out, method);
+               }
+               for (IndexSignatureDefinition idxSig: intf.indexSignatures)
+               {
+                  String returnType = typeString(idxSig.returnType, false);
+                  imports.add("jsinterop.annotations.JsOverlay");
+                  if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("number"))
                   {
                      out.println("@JsOverlay");
-                     out.println(String.format("public default void set(double %2$s, %1$s val) {", returnType, idxSig.indexName));
-                     out.println(String.format("  com.user00.domjnate.util.Js.setIndex(this, %2$s, val);", returnType, idxSig.indexName));
+                     out.println(String.format("public default %1$s get(double %2$s) {", returnType, idxSig.indexName));
+                     out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getIndex(this, %2$s, %1$s.class);", returnType, idxSig.indexName));
                      out.println("}");
+                     if (!idxSig.readOnly) 
+                     {
+                        out.println("@JsOverlay");
+                        out.println(String.format("public default void set(double %2$s, %1$s val) {", returnType, idxSig.indexName));
+                        out.println(String.format("  com.user00.domjnate.util.Js.setIndex(this, %2$s, val);", returnType, idxSig.indexName));
+                        out.println("}");
+                     }
                   }
+                  else
+                     out.println("Unhandled index signature on interface");
                }
-               else
-                  out.println("Unhandled index signature on interface");
+               for (CallSignatureDefinition construct: intf.constructSignatures)
+               {
+                  makeConstructor(out, construct, false, imports);
+               }
+               for (CallSignatureDefinition call: intf.callSignatures)
+               {
+                  out.println("Unhandled call signature on interface");
+               }
             }
-            for (CallSignatureDefinition construct: intf.constructSignatures)
-            {
-               makeConstructor(out, construct, false, imports);
-            }
-            for (CallSignatureDefinition call: intf.callSignatures)
-            {
-               out.println("Unhandled call signature on interface");
-            }
-       
             
             if (staticIntf != null)
             {
@@ -416,8 +431,8 @@ public class ApiGenerator
          {
             String paramType = typeString(param.type, false);
             out.print(paramType);
+            out.print("... ");
          }
-         out.print("... ");
          out.print(param.name);
       }
    }
@@ -458,7 +473,6 @@ public class ApiGenerator
          
          if (!prop.readOnly)
          {
-            if (!prop.name.equals("prototype")) System.out.println("MINGMING" +className);
             out.println("@JsOverlay");
             out.println(String.format("public static void %1$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, %2$s val) {", setterName(prop.name), type));
             out.println(String.format("  com.user00.domjnate.api.Object obj = com.user00.domjnate.util.Js.getMember(_win, \"%1$s\", com.user00.domjnate.api.Object.class);", className));

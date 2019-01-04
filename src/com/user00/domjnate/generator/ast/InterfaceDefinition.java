@@ -20,6 +20,9 @@ public class InterfaceDefinition
    public List<IndexSignatureDefinition> indexSignatures = new ArrayList<>();
    
    public ProblemTracker problems = new ProblemTracker();
+
+   public boolean doNotGenerateJava = false;  // Do not generate a Java interface for this interface
+   public boolean isStaticOnly = false;       // Do not generate any instance properties or methods for the interface since it's not possible to instantiate the object
    
    public boolean isFunction()
    {

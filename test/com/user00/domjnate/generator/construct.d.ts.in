@@ -19,5 +19,12 @@ declare var Test2 : {
 	method2() : number;
 };
 
+interface Math
+{
+	E:number;
+	min(...a:number) : number;
+}
+
+declare var Math: Math;
 declare var Test2: typeof Test2;
 declare var Test : TestConstructor;

@@ -2,6 +2,7 @@ package com.user00.domjnate.generator;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.antlr.v4.runtime.CharStream;
@@ -75,8 +76,50 @@ public class DomjnateGenerator
       {
          api.interfaces.get("SVGElement").properties.removeIf( p -> "className".equals(p.name));
       }
+      
       // Remove the String type
       api.interfaces.remove("String");
+      
+      // Remove artificial interfaces used to store constructors and static methods
+      for (String intfName: Arrays.asList(
+            "URIErrorConstructor",
+            "PromiseConstructor",
+            "Int8ArrayConstructor",
+            "Float32ArrayConstructor",
+            "Uint8ClampedArrayConstructor",
+            "FunctionConstructor",
+            "ArrayConstructor",
+            "TypeErrorConstructor",
+            "ArrayBufferConstructor",
+            "Uint32ArrayConstructor",
+            "Uint16ArrayConstructor",
+            "BooleanConstructor",
+            "ObjectConstructor",
+            "SyntaxErrorConstructor",
+            "Int32ArrayConstructor",
+            "RangeErrorConstructor",
+            "DateConstructor",
+            "DataViewConstructor",
+            "ReferenceErrorConstructor",
+            "RegExpConstructor",
+            "NumberConstructor",
+            "Int16ArrayConstructor",
+            "EvalErrorConstructor",
+            "SymbolConstructor",
+            "ErrorConstructor",
+            "Uint8ArrayConstructor",
+            "Float64ArrayConstructor"))
+      {
+         if (api.interfaces.containsKey(intfName))
+         {
+            api.interfaces.get(intfName).doNotGenerateJava = true;
+         }
+// static ambient CSS with CSS
+// static ambient Math with Math
+// static ambient JSON with JSON
+// static ambient ServiceUIFrameContext with ServiceUIFrameContext
+
+      }
    }
 
 
