@@ -15,6 +15,8 @@ declare var Test2 : {
 	new() : Test2;
 	new(a : number, b? : string, ...c:number) : Test2;
 	prototype : Node;
+	method(a : string) : void;
+	method2() : number;
 };
 
 declare var Test2: typeof Test2;

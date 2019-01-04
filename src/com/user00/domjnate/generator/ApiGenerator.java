@@ -301,7 +301,8 @@ public class ApiGenerator
                }
                for (PropertyDefinition method: staticIntf.methods)
                {
-                  out.println("Unhandled static method " + method.name);
+                  imports.add("jsinterop.annotations.JsOverlay");
+                  generateStaticMethod(out, name, method);
                }
                for (CallSignatureDefinition call: staticIntf.callSignatures)
                {
@@ -529,13 +530,69 @@ public class ApiGenerator
       {
          generateGenericTypeParams(out, callSigType.genericTypeParameters);
       }
-      out.print(returnType + " ");
-      out.print(methodName(methodName));
-      out.print("(");
       boolean isFirst = true;
+      out.print(String.format("%1$s %2$s(", returnType, methodName(methodName)));
       generateMethodParameters(out, callSigType, numOptionals, isFirst, true);
-      out.print(");");
-      out.println();
+      out.println(");");
+      if (methodProblems != null)
+         methodProblems.dump(out);
+      callSigType.problems.dump(out);
+      for (CallParameter param: callSigType.params)
+         param.problems.dump(out);
+   }
+
+   private void generateStaticMethod(PrintWriter out, String className, PropertyDefinition method)
+   {
+//      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
+//      {
+//         out.println("// TODO: Suppressing addEventListener with typed events");
+//         return;
+//      }
+//      if ("removeEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
+//      {
+//         out.println("// TODO: Suppressing removeEventListener with typed events");
+//         return;
+//      }
+      if (method.callSigType.genericTypeParameters != null)
+      {
+         // Ignore keyof generic type parameters for now
+         for (GenericParameter generic: method.callSigType.genericTypeParameters)
+         {
+            if (generic.simpleExtendsKeyOf != null)
+            {
+               out.println("// TODO: Suppressing generic keyof type parameter for " + method.name);
+               return;
+            }
+         }
+      }
+      for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
+      {
+         generateStaticMethodWithOptionals(out, className, method.name, method.callSigType, method.problems, n);
+      }
+   }
+   
+
+   private void generateStaticMethodWithOptionals(PrintWriter out, String className, String methodName, CallSignatureDefinition callSigType, ProblemTracker methodProblems, int numOptionals)
+   {
+      String returnType = typeString(callSigType.returnType, false);
+
+         out.println("@JsOverlay");
+      if (callSigType.genericTypeParameters != null)
+      {
+         generateGenericTypeParams(out, callSigType.genericTypeParameters);
+      }
+      boolean isFirst = true;
+      out.print(String.format("public static %1$s %2$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, methodName(methodName)));
+      isFirst = false;
+      generateMethodParameters(out, callSigType, numOptionals, isFirst, true);
+      out.println(") {");
+      out.print("  ");
+      if (!returnType.equals("void"))
+         out.print("return ");
+      out.print(String.format("com.user00.domjnate.util.Js.callStaticMethod(_win, \"%1$s\", \"%2$s\", %3$s.class", className, methodName, returnType));
+      generateMethodParameters(out, callSigType, numOptionals, false, false);
+      out.println(");");
+      out.println("}");
       if (methodProblems != null)
          methodProblems.dump(out);
       callSigType.problems.dump(out);
