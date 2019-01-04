@@ -31,8 +31,6 @@ import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.Type.TypeVisitor;
 
-import netscape.javascript.JSObject;
-
 import com.user00.domjnate.generator.ast.TypeQueryType;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.ast.UnionType;
@@ -467,7 +465,7 @@ public class ApiGenerator
          imports.add("jsinterop.annotations.JsOverlay");
          out.println("@JsOverlay");
          out.println(String.format("public static %2$s %1$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", getterName(prop.name), type));
-         out.println(String.format("  com.user00.domjnate.api.Object obj = com.user00.domjnate.util.Js.getMember(_win, \"%1$s\", com.user00.domjnate.api.Object.class);", className));
+         out.println(String.format("  com.user00.domjnate.util.EmptyInterface obj = com.user00.domjnate.util.Js.getMember(_win, \"%1$s\", com.user00.domjnate.util.EmptyInterface.class);", className));
          out.println(String.format("  return com.user00.domjnate.util.Js.getMember(obj, \"%1$s\", %2$s.class);", prop.name, type));
          out.println("}");
          
@@ -475,7 +473,7 @@ public class ApiGenerator
          {
             out.println("@JsOverlay");
             out.println(String.format("public static void %1$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, %2$s val) {", setterName(prop.name), type));
-            out.println(String.format("  com.user00.domjnate.api.Object obj = com.user00.domjnate.util.Js.getMember(_win, \"%1$s\", com.user00.domjnate.api.Object.class);", className));
+            out.println(String.format("  com.user00.domjnate.util.EmptyInterface obj = com.user00.domjnate.util.Js.getMember(_win, \"%1$s\", com.user00.domjnate.util.EmptyInterface.class);", className));
             out.println(String.format("  com.user00.domjnate.util.Js.setMember(obj, \"%1$s\", val);", prop.name));
             out.println("}");
          }
