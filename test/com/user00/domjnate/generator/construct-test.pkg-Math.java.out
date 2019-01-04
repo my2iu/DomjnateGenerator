@@ -17,7 +17,11 @@ public static void setE(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, 
   com.user00.domjnate.util.Js.setMember(obj, "E", val);
 }
 @JsOverlay
-public static double min(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, double... a) {
+public static <T> double min(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, T... a) {
   return com.user00.domjnate.util.Js.callStaticMethod(_win, "Math", "min", double.class, a);
+}
+@JsOverlay
+public static double call(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, String a) {
+  return com.user00.domjnate.util.Js.callMethod(_win, "Math", double.class, a);
 }
 }

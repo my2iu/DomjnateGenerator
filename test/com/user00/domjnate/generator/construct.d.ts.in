@@ -22,7 +22,8 @@ declare var Test2 : {
 interface Math
 {
 	E:number;
-	min(...a:number) : number;
+	min<T>(...a:T) : number;
+	(a:string) : number;
 }
 
 declare var Math: Math;

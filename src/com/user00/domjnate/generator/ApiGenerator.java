@@ -319,7 +319,7 @@ public class ApiGenerator
                }
                for (CallSignatureDefinition call: staticIntf.callSignatures)
                {
-                  out.println("Unhandled static call");
+                  makeStaticCallOnInterface(out, intf.name, call, imports);
                }
                for (CallSignatureDefinition construct: staticIntf.constructSignatures)
                {
@@ -355,6 +355,41 @@ public class ApiGenerator
       });
    }
 
+   private void makeStaticCallOnInterface(PrintWriter out, String name, CallSignatureDefinition sig, Set<String> imports)
+   {
+      sig.problems.dump(out);
+      imports.add("jsinterop.annotations.JsOverlay");
+      if (sig.genericTypeParameters != null && sig.genericTypeParameters.size() > 0)
+      {
+         out.println("Unhandled call on interface with generic type parameters");
+         return;
+      }
+      for (int n = 0; n <= sig.optionalParams.size(); n++)
+      {
+         makeStaticCallOnInterfaceWithOptionals(out, name, sig, n);
+      }
+
+   }
+
+   private void makeStaticCallOnInterfaceWithOptionals(PrintWriter out, String name, CallSignatureDefinition callSigType, int numOptionals)
+   {
+      String returnType = typeString(callSigType.returnType, false);
+      out.println("@JsOverlay");
+      out.print(String.format("public static %1$s call(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType));
+
+      generateMethodParameters(out, callSigType, numOptionals, false, true);
+      out.println(") {");
+      out.print(String.format("  return com.user00.domjnate.util.Js.callMethod(_win, \"%2$s\", %1$s.class", returnType, name));
+      generateMethodParameters(out, callSigType, numOptionals, false, false);
+      out.println(");");
+      out.println("}");
+
+      callSigType.problems.dump(out);
+      for (CallParameter param: callSigType.params)
+         param.problems.dump(out);
+   }
+
+   
    private void makeConstructor(PrintWriter out, CallSignatureDefinition construct, boolean isStatic, Set<String> imports)
    {
       construct.problems.dump(out);
@@ -588,13 +623,14 @@ public class ApiGenerator
    {
       String returnType = typeString(callSigType.returnType, false);
 
-         out.println("@JsOverlay");
+      out.println("@JsOverlay");
+      out.print("public static ");
       if (callSigType.genericTypeParameters != null)
       {
          generateGenericTypeParams(out, callSigType.genericTypeParameters);
       }
       boolean isFirst = true;
-      out.print(String.format("public static %1$s %2$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, methodName(methodName)));
+      out.print(String.format("%1$s %2$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, methodName(methodName)));
       isFirst = false;
       generateMethodParameters(out, callSigType, numOptionals, isFirst, true);
       out.println(") {");
