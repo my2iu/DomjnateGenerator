@@ -30,6 +30,8 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientBindingListCont
 import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientConstDeclarationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientDeclarationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientLetDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientNamespaceDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientNamespaceElementContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientVarDeclarationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeContext;
@@ -693,6 +695,10 @@ public class TsDeclarationsReader
             // otherwise, we've got a global variable
             ctx.ambientVariableDeclaration().accept(this);
          }
+         else if (ctx.ambientNamespaceDeclaration() != null)
+         {
+            ctx.ambientNamespaceDeclaration().accept(this);
+         }
          else
             api.problems.add("Unhandled ambient declaration " + ctx.getText());
 
@@ -727,6 +733,22 @@ public class TsDeclarationsReader
          reader.api = api;
          ctx.ambientBindingList().accept(reader);
          return null;
+      }
+      
+      @Override
+      public Void visitAmbientNamespaceDeclaration(AmbientNamespaceDeclarationContext ctx)
+      {
+         String name = ctx.identifierPath().getText();
+         ApiDefinition namespace = new ApiDefinition();
+         ctx.ambientNamespaceBody().accept(new TopLevelReader(namespace));
+         api.namespaces.put(name, namespace);
+         return null;
+      }
+      @Override
+      public Void visitAmbientNamespaceElement(AmbientNamespaceElementContext ctx)
+      {
+         // TODO Auto-generated method stub
+         return super.visitAmbientNamespaceElement(ctx);
       }
       
       @Override

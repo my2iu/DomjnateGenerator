@@ -8,9 +8,11 @@ import java.util.Map;
  */
 public class ApiDefinition
 {
+   public String remapName = null;
    public Map<String, InterfaceDefinition> interfaces = new HashMap<>();
    public ProblemTracker problems = new ProblemTracker();
    public Map<String, Type> typeAliases = new HashMap<>();
    public Map<String, Type> ambientVars = new HashMap<>();
    public Map<String, Type> ambientConsts = new HashMap<>();
+   public Map<String, ApiDefinition> namespaces = new HashMap<>();
 }

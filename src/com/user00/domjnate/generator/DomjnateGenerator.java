@@ -44,8 +44,8 @@ public class DomjnateGenerator
       fixupApi(api);
       
       // Generate JsInterop API based on type data that we've read
-      generator.api = api;
-      generator.generate();
+      generator.topLevel = api;
+      generator.generate(null, api);
    }
    
    void fixupApi(ApiDefinition api)
@@ -114,12 +114,11 @@ public class DomjnateGenerator
          {
             api.interfaces.get(intfName).doNotGenerateJava = true;
          }
-// static ambient CSS with CSS
-// static ambient Math with Math
-// static ambient JSON with JSON
-// static ambient ServiceUIFrameContext with ServiceUIFrameContext
-
       }
+      
+      // Remap Intl namespace to lower-case intl
+      if (api.namespaces.containsKey("Intl"))
+         api.namespaces.get("Intl").remapName = "intl";
    }
 
 

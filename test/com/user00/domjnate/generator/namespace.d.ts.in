@@ -1,0 +1,17 @@
+declare namespace Intl {
+	interface Test
+	{
+		method<K extends Node, T extends Node>(a : K, b: T) : void;
+	}
+	
+	export var Test: {
+        new(): Test;
+        doIt() : number;
+    };
+}
+
+interface Test
+{
+	method(a:Intl.Test) : Intl.Test;
+	method(b:Test) : Intl.Test;
+}

@@ -110,4 +110,13 @@ public class DomjnateGeneratorTest
       files.compareWithTestFiles(4, this.getClass(), "construct", ".out");
    }
 
+   @Test
+   public void testNamespace() throws IOException
+   {
+      // Special handling of event handlers
+      TestGeneratorFileOutputManagerHelper files = new TestGeneratorFileOutputManagerHelper();
+      generateFilesFromTs(files, "namespace.d.ts.in");
+      files.compareWithTestFiles(2, this.getClass(), "namespace", ".out");
+   }
+
 }

@@ -10,6 +10,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -39,7 +40,7 @@ public class ApiGenerator
 {
    String outputDir = "apigen";
    String pkg = "com.user00.domjnate.api";
-   ApiDefinition api;
+   ApiDefinition topLevel;
    
    FileOutputManager files = new FileOutputManager();
    
@@ -75,7 +76,29 @@ public class ApiGenerator
       return name;
    }
    
-   String typeString(Type basicType, boolean nullable)
+   public static class TypeStringGenerationContext
+   {
+      public TypeStringGenerationContext(ApiDefinition namespaceScope)
+      {
+         this.namespaceScope = namespaceScope;
+      }
+      public ApiDefinition namespaceScope;
+      public boolean nullable;
+      TypeStringGenerationContext copy()
+      {
+         TypeStringGenerationContext ctx = new TypeStringGenerationContext(namespaceScope);
+         ctx.nullable = nullable;
+         return ctx;
+      }
+      TypeStringGenerationContext withNullable(boolean nullable)
+      {
+         TypeStringGenerationContext ctx = copy();
+         ctx.nullable = nullable;
+         return ctx;
+      }
+   }
+   
+   String typeString(Type basicType, TypeStringGenerationContext ctx)
    {
       if (basicType == null) return "java.lang.Object";
       return basicType.visit(new TypeVisitor<String>() {
@@ -86,10 +109,10 @@ public class ApiGenerator
             switch(basicType.type)
             {
             case "any": type = "java.lang.Object"; break;
-            case "number": type = nullable ? "Double" : "double"; break;
+            case "number": type = ctx.nullable ? "Double" : "double"; break;
             case "string": type = "String"; break;
-            case "boolean": type = nullable ? "Boolean" : "boolean"; break;
-            case "void": type = nullable ? "Void" : "void"; break;
+            case "boolean": type = ctx.nullable ? "Boolean" : "boolean"; break;
+            case "void": type = ctx.nullable ? "Void" : "void"; break;
             default: type = "unknown"; break;
             }
             return type;
@@ -97,9 +120,14 @@ public class ApiGenerator
          @Override
          public String visitTypeReferenceType(TypeReference type)
          {
-            if (api.typeAliases.containsKey(type.typeName))
+            // TODO: Should type aliases recurse?
+            if (ctx.namespaceScope.typeAliases.containsKey(type.typeName))
             {
-               return typeString(api.typeAliases.get(type.typeName), nullable);
+               return typeString(ctx.namespaceScope.typeAliases.get(type.typeName), ctx);
+            }
+            if (topLevel.typeAliases.containsKey(type.typeName))
+            {
+               return typeString(topLevel.typeAliases.get(type.typeName), ctx);
             }
             if (type.typeArgs != null)
             {
@@ -110,10 +138,34 @@ public class ApiGenerator
                {
                   if (!isFirst) ref += ", ";
                   isFirst = false;
-                  ref += typeString(typeArg, true);
+                  ref += typeString(typeArg, ctx.withNullable(true));
                }
                ref += ">";
                return ref;
+            }
+            // See if we need to use a full package name here
+            if (type.typeName.contains("."))
+            {
+               // We're referring to a type in another namespace, so show the
+               // package name with the type name to be safe
+               String[] parts = type.typeName.split("[.]");
+               String subpkg = null;
+               String namespace = null;
+               ApiDefinition ctx = topLevel;
+               for (String p: Arrays.copyOf(parts, parts.length - 1))
+               {
+                  namespace = (namespace == null ? p : namespace + "." + p);
+                  ctx = ctx.namespaces.get(p);
+                  subpkg = (ctx.remapName != null ? ctx.remapName : namespace);
+               }
+               return pkg + "." + subpkg + "." + parts[parts.length - 1];
+            }
+            if (ctx.namespaceScope.interfaces.containsKey(type.typeName))
+            {
+               // We're currently in a namespace and are referring to another
+               // type in the same namespace. We'll return the full type with
+               // package name to be safe.
+               // TODO: I'm ignoring this for now
             }
             return type.typeName;
          }
@@ -121,7 +173,7 @@ public class ApiGenerator
          @Override
          public String visitNullableType(NullableType type)
          {
-            return typeString(type.subtype, true);
+            return typeString(type.subtype, ctx.withNullable(true));
          }
          
          @Override
@@ -138,7 +190,7 @@ public class ApiGenerator
       });
    }
 
-   void generateFunctionInterface(InterfaceDefinition intf) throws IOException
+   void generateFunctionInterface(InterfaceDefinition intf, ApiDefinition api) throws IOException
    {
       Set<String> imports = new HashSet<>();
 
@@ -165,7 +217,7 @@ public class ApiGenerator
                   out.println("Unhandled type parameters on function interface call signature");
                for (int n = 0; n <= call.optionalParams.size(); n++)
                {
-                  generateMethodWithOptionals(out, "accept", call, null, n, false);
+                  generateMethodWithOptionals(out, "accept", call, api, null, n, false);
                }
    
             }
@@ -201,27 +253,27 @@ public class ApiGenerator
          ambientVars.remove(name);
          return ((ObjectType)type).intf;
       }
-      else if (type instanceof TypeReference && api.interfaces.containsKey(((TypeReference)type).typeName))
+      else if (type instanceof TypeReference && topLevel.interfaces.containsKey(((TypeReference)type).typeName))
       {
-         if (!api.interfaces.get(((TypeReference)type).typeName).doNotGenerateJava)
+         if (!topLevel.interfaces.get(((TypeReference)type).typeName).doNotGenerateJava)
          {
             if (name.equals(((TypeReference)type).typeName))
-               api.interfaces.get(((TypeReference)type).typeName).isStaticOnly = true;
+               topLevel.interfaces.get(((TypeReference)type).typeName).isStaticOnly = true;
             else
                System.err.println("static ambient " + name + " with " + ((TypeReference)type).typeName);
          }
          ambientVars.remove(name);
-         return api.interfaces.get(((TypeReference)type).typeName); 
+         return topLevel.interfaces.get(((TypeReference)type).typeName); 
       }
       return null;
    }
    
-   void generateInterface(InterfaceDefinition intf) throws IOException
+   void generateInterface(String pkgName, ApiDefinition api, InterfaceDefinition intf) throws IOException
    {
       if (intf.doNotGenerateJava) return;
       if (intf.isFunction())
       {
-         generateFunctionInterface(intf);
+         generateFunctionInterface(intf, api);
          return;
       }
       String name = intf.name;
@@ -230,9 +282,14 @@ public class ApiGenerator
          intfAmbient = lookupInterfaceAmbient(name, api.ambientVars);
       else if (api.ambientConsts.containsKey(name))
          intfAmbient = lookupInterfaceAmbient(name, api.ambientConsts);
+      else if (topLevel.ambientVars.containsKey(name))
+         intfAmbient = lookupInterfaceAmbient(name, topLevel.ambientVars);
+      else if (topLevel.ambientConsts.containsKey(name))
+         intfAmbient = lookupInterfaceAmbient(name, topLevel.ambientConsts);
       InterfaceDefinition staticIntf = intfAmbient;
+      String fullPkg = (pkgName == null ? pkg : pkg + "." + pkgName);
       
-      files.makeFile(outputDir, pkg, name, (outmain) -> {
+      files.makeFile(outputDir, fullPkg, name, (outmain) -> {
          String intfBody;
          Set<String> imports = new HashSet<>();
          
@@ -256,7 +313,7 @@ public class ApiGenerator
                   if (!isFirst)
                      out.print(", ");
                   isFirst = false;
-                  out.print(typeString(typeRef, false));
+                  out.print(typeString(typeRef, new TypeStringGenerationContext(api)));
                   typeRef.problems.dump(out);
                }
             }
@@ -267,16 +324,16 @@ public class ApiGenerator
             {
                for (PropertyDefinition prop: intf.properties)
                {
-                  makeProperty(out, name, prop, false, imports);
+                  makeProperty(out, name, prop, api, false, imports);
                }
                for (PropertyDefinition method: intf.methods)
                {
                   imports.add("jsinterop.annotations.JsMethod");
-                  generateMethod(out, method);
+                  generateMethod(out, method, api);
                }
                for (IndexSignatureDefinition idxSig: intf.indexSignatures)
                {
-                  String returnType = typeString(idxSig.returnType, false);
+                  String returnType = typeString(idxSig.returnType, new TypeStringGenerationContext(api));
                   imports.add("jsinterop.annotations.JsOverlay");
                   if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("number"))
                   {
@@ -297,7 +354,7 @@ public class ApiGenerator
                }
                for (CallSignatureDefinition construct: intf.constructSignatures)
                {
-                  makeConstructor(out, construct, false, imports);
+                  makeConstructor(out, construct, api, false, imports);
                }
                for (CallSignatureDefinition call: intf.callSignatures)
                {
@@ -310,20 +367,20 @@ public class ApiGenerator
                staticIntf.problems.dump(out);
                for (PropertyDefinition prop: staticIntf.properties)
                {
-                  makeProperty(out, name, prop, true, imports);
+                  makeProperty(out, name, prop, api, true, imports);
                }
                for (PropertyDefinition method: staticIntf.methods)
                {
                   imports.add("jsinterop.annotations.JsOverlay");
-                  generateStaticMethod(out, name, method);
+                  generateStaticMethod(out, name, method, api);
                }
                for (CallSignatureDefinition call: staticIntf.callSignatures)
                {
-                  makeStaticCallOnInterface(out, intf.name, call, imports);
+                  makeStaticCallOnInterface(out, intf.name, call, api, imports);
                }
                for (CallSignatureDefinition construct: staticIntf.constructSignatures)
                {
-                  makeConstructor(out, construct, true, imports);
+                  makeConstructor(out, construct, api, true, imports);
                }
                for (IndexSignatureDefinition idxSig: staticIntf.indexSignatures)
                {
@@ -340,7 +397,7 @@ public class ApiGenerator
             throw new IllegalArgumentException(e);
          }
          
-         outmain.println(String.format("package %1$s;", pkg));
+         outmain.println(String.format("package %1$s;", fullPkg));
          outmain.println();
          List<String> importList = new ArrayList<>(imports);
          Collections.sort(importList);
@@ -355,7 +412,7 @@ public class ApiGenerator
       });
    }
 
-   private void makeStaticCallOnInterface(PrintWriter out, String name, CallSignatureDefinition sig, Set<String> imports)
+   private void makeStaticCallOnInterface(PrintWriter out, String name, CallSignatureDefinition sig, ApiDefinition api, Set<String> imports)
    {
       sig.problems.dump(out);
       imports.add("jsinterop.annotations.JsOverlay");
@@ -366,21 +423,21 @@ public class ApiGenerator
       }
       for (int n = 0; n <= sig.optionalParams.size(); n++)
       {
-         makeStaticCallOnInterfaceWithOptionals(out, name, sig, n);
+         makeStaticCallOnInterfaceWithOptionals(out, name, sig, api, n);
       }
 
    }
 
-   private void makeStaticCallOnInterfaceWithOptionals(PrintWriter out, String name, CallSignatureDefinition callSigType, int numOptionals)
+   private void makeStaticCallOnInterfaceWithOptionals(PrintWriter out, String name, CallSignatureDefinition callSigType, ApiDefinition api, int numOptionals)
    {
-      String returnType = typeString(callSigType.returnType, false);
+      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api));
       out.println("@JsOverlay");
       out.print(String.format("public static %1$s call(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType));
 
-      generateMethodParameters(out, callSigType, numOptionals, false, true);
+      generateMethodParameters(out, callSigType, api, numOptionals, false, true);
       out.println(") {");
       out.print(String.format("  return com.user00.domjnate.util.Js.callMethod(_win, \"%2$s\", %1$s.class", returnType, name));
-      generateMethodParameters(out, callSigType, numOptionals, false, false);
+      generateMethodParameters(out, callSigType, api, numOptionals, false, false);
       out.println(");");
       out.println("}");
 
@@ -390,7 +447,7 @@ public class ApiGenerator
    }
 
    
-   private void makeConstructor(PrintWriter out, CallSignatureDefinition construct, boolean isStatic, Set<String> imports)
+   private void makeConstructor(PrintWriter out, CallSignatureDefinition construct, ApiDefinition api, boolean isStatic, Set<String> imports)
    {
       construct.problems.dump(out);
       imports.add("jsinterop.annotations.JsOverlay");
@@ -401,14 +458,14 @@ public class ApiGenerator
       }
       for (int n = 0; n <= construct.optionalParams.size(); n++)
       {
-         generateConstructWithOptionals(out, construct, n, isStatic);
+         generateConstructWithOptionals(out, construct, api, n, isStatic);
       }
 
    }
 
-   private void generateConstructWithOptionals(PrintWriter out, CallSignatureDefinition callSigType, int numOptionals, boolean isStatic)
+   private void generateConstructWithOptionals(PrintWriter out, CallSignatureDefinition callSigType, ApiDefinition api, int numOptionals, boolean isStatic)
    {
-      String returnType = typeString(callSigType.returnType, false);
+      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api));
       out.println("@JsOverlay");
       out.print(String.format("public %2$s %1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, isStatic ? "static" : "default"));
 
@@ -416,11 +473,11 @@ public class ApiGenerator
 //      {
 //         generateGenericTypeParams(out, callSigType.genericTypeParameters);
 //      }
-      generateMethodParameters(out, callSigType, numOptionals, false, true);
+      generateMethodParameters(out, callSigType, api, numOptionals, false, true);
       out.println(") {");
       out.println(String.format("  java.lang.Object constructor = com.user00.domjnate.util.Js.getConstructor(_win, \"%1$s\");", returnType));
       out.print(String.format("  return com.user00.domjnate.util.Js.construct(_win, constructor, %1$s.class", returnType));
-      generateMethodParameters(out, callSigType, numOptionals, false, false);
+      generateMethodParameters(out, callSigType, api, numOptionals, false, false);
       out.println(");");
       out.println("}");
 
@@ -429,8 +486,9 @@ public class ApiGenerator
          param.problems.dump(out);
    }
 
-   private void generateMethodParameters(PrintWriter out, CallSignatureDefinition callSigType, int numOptionals,
-         boolean isFirst, boolean withTypes)
+   private void generateMethodParameters(PrintWriter out, CallSignatureDefinition callSigType, 
+         ApiDefinition api, 
+         int numOptionals, boolean isFirst, boolean withTypes)
    {
       for (CallParameter param: callSigType.params)
       {
@@ -438,7 +496,7 @@ public class ApiGenerator
          isFirst = false;
          if (withTypes) 
          {
-            String paramType = typeString(param.type, false);
+            String paramType = typeString(param.type, new TypeStringGenerationContext(api));
             out.print(paramType + " ");
          }
          out.print(param.name);
@@ -450,7 +508,7 @@ public class ApiGenerator
          isFirst = false;
          if (withTypes) 
          {
-            String paramType = typeString(param.type, false);
+            String paramType = typeString(param.type, new TypeStringGenerationContext(api));
             out.print(paramType + " ");
          }
          out.print(param.name);
@@ -462,7 +520,7 @@ public class ApiGenerator
          isFirst = false;
          if (withTypes) 
          {
-            String paramType = typeString(param.type, false);
+            String paramType = typeString(param.type, new TypeStringGenerationContext(api));
             out.print(paramType);
             out.print("... ");
          }
@@ -470,7 +528,7 @@ public class ApiGenerator
       }
    }
 
-   private void makeProperty(PrintWriter out, String className, PropertyDefinition prop, boolean isStatic, Set<String> imports)
+   private void makeProperty(PrintWriter out, String className, PropertyDefinition prop, ApiDefinition api, boolean isStatic, Set<String> imports)
    {
       if (prop.type != null && prop.type instanceof TypeQueryType)
       {
@@ -480,7 +538,7 @@ public class ApiGenerator
       String type = "java.lang.Object";
       if (prop.type != null)
       {
-         type = typeString(prop.type, prop.optional);
+         type = typeString(prop.type, new TypeStringGenerationContext(api).withNullable(prop.optional));
          prop.type.problems.dump(out);
       }
       if (!isStatic)
@@ -537,7 +595,7 @@ public class ApiGenerator
 
    }
    
-   private void generateMethod(PrintWriter out, PropertyDefinition method)
+   private void generateMethod(PrintWriter out, PropertyDefinition method, ApiDefinition api)
    {
 //      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
 //      {
@@ -563,13 +621,13 @@ public class ApiGenerator
       }
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
-         generateMethodWithOptionals(out, method.name, method.callSigType, method.problems, n, true);
+         generateMethodWithOptionals(out, method.name, method.callSigType, api, method.problems, n, true);
       }
    }
    
-   private void generateMethodWithOptionals(PrintWriter out, String methodName, CallSignatureDefinition callSigType, ProblemTracker methodProblems, int numOptionals, boolean withJsMethodAnnotation)
+   private void generateMethodWithOptionals(PrintWriter out, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, ProblemTracker methodProblems, int numOptionals, boolean withJsMethodAnnotation)
    {
-      String returnType = typeString(callSigType.returnType, false);
+      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api));
 
       if (withJsMethodAnnotation)
          out.println(String.format("@JsMethod(name=\"%1$s\")", methodName));
@@ -579,7 +637,7 @@ public class ApiGenerator
       }
       boolean isFirst = true;
       out.print(String.format("%1$s %2$s(", returnType, methodName(methodName)));
-      generateMethodParameters(out, callSigType, numOptionals, isFirst, true);
+      generateMethodParameters(out, callSigType, api, numOptionals, isFirst, true);
       out.println(");");
       if (methodProblems != null)
          methodProblems.dump(out);
@@ -588,7 +646,7 @@ public class ApiGenerator
          param.problems.dump(out);
    }
 
-   private void generateStaticMethod(PrintWriter out, String className, PropertyDefinition method)
+   private void generateStaticMethod(PrintWriter out, String className, PropertyDefinition method, ApiDefinition api)
    {
 //      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
 //      {
@@ -614,14 +672,14 @@ public class ApiGenerator
       }
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
-         generateStaticMethodWithOptionals(out, className, method.name, method.callSigType, method.problems, n);
+         generateStaticMethodWithOptionals(out, className, method.name, method.callSigType, api, method.problems, n);
       }
    }
    
 
-   private void generateStaticMethodWithOptionals(PrintWriter out, String className, String methodName, CallSignatureDefinition callSigType, ProblemTracker methodProblems, int numOptionals)
+   private void generateStaticMethodWithOptionals(PrintWriter out, String className, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, ProblemTracker methodProblems, int numOptionals)
    {
-      String returnType = typeString(callSigType.returnType, false);
+      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api));
 
       out.println("@JsOverlay");
       out.print("public static ");
@@ -632,13 +690,13 @@ public class ApiGenerator
       boolean isFirst = true;
       out.print(String.format("%1$s %2$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, methodName(methodName)));
       isFirst = false;
-      generateMethodParameters(out, callSigType, numOptionals, isFirst, true);
+      generateMethodParameters(out, callSigType, api, numOptionals, isFirst, true);
       out.println(") {");
       out.print("  ");
       if (!returnType.equals("void"))
          out.print("return ");
       out.print(String.format("com.user00.domjnate.util.Js.callStaticMethod(_win, \"%1$s\", \"%2$s\", %3$s.class", className, methodName, returnType));
-      generateMethodParameters(out, callSigType, numOptionals, false, false);
+      generateMethodParameters(out, callSigType, api, numOptionals, false, false);
       out.println(");");
       out.println("}");
       if (methodProblems != null)
@@ -648,11 +706,17 @@ public class ApiGenerator
          param.problems.dump(out);
    }
 
-   public void generate() throws IOException
+   public void generate(String namespaceName, ApiDefinition api) throws IOException
    {
+      String levelName = namespaceName;
+      String levelJavaPkg;
+      if (api.remapName == null)
+         levelJavaPkg = namespaceName;
+      else
+         levelJavaPkg = api.remapName;
       for (InterfaceDefinition intf: api.interfaces.values())
       {
-         generateInterface(intf);
+         generateInterface(levelJavaPkg, api, intf);
       }
       for (Map.Entry<String, Type> entry: api.ambientVars.entrySet())
       {
@@ -663,6 +727,15 @@ public class ApiGenerator
       {
          System.err.println("Unhandled ambient const " + entry.getKey());
          entry.getValue().problems.dump(System.err);
+      }
+      for (Map.Entry<String, ApiDefinition> namespace: api.namespaces.entrySet())
+      {
+         String nextName;
+         if (namespaceName == null)
+            nextName = namespace.getKey();
+         else
+            nextName = namespaceName + "." + namespace.getKey();
+         generate(nextName, namespace.getValue());
       }
 
       api.problems.dump(System.err);
