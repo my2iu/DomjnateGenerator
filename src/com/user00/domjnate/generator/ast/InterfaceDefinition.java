@@ -21,6 +21,7 @@ public class InterfaceDefinition
    
    public ProblemTracker problems = new ProblemTracker();
 
+   public String remapPackage = null;  // Changes the package where Java interface will be put
    public boolean doNotGenerateJava = false;  // Do not generate a Java interface for this interface
    public boolean isStaticOnly = false;       // Do not generate any instance properties or methods for the interface since it's not possible to instantiate the object
    

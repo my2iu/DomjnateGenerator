@@ -190,12 +190,13 @@ public class ApiGenerator
       });
    }
 
-   void generateFunctionInterface(InterfaceDefinition intf, ApiDefinition api) throws IOException
+   void generateFunctionInterface(InterfaceDefinition intf, String pkgName, ApiDefinition api) throws IOException
    {
       Set<String> imports = new HashSet<>();
+      String fullPkg = (pkgName == null ? pkg : pkg + "." + pkgName);
 
       String name = intf.name;
-      files.makeFile(outputDir, pkg, name, (outmain) -> {
+      files.makeFile(outputDir, fullPkg, name, (outmain) -> {
          String body;
          try (StringWriter stringWriter = new StringWriter();
                PrintWriter out = new PrintWriter(stringWriter)) {
@@ -273,7 +274,7 @@ public class ApiGenerator
       if (intf.doNotGenerateJava) return;
       if (intf.isFunction())
       {
-         generateFunctionInterface(intf, api);
+         generateFunctionInterface(intf, pkgName, api);
          return;
       }
       String name = intf.name;
@@ -716,7 +717,10 @@ public class ApiGenerator
          levelJavaPkg = api.remapName;
       for (InterfaceDefinition intf: api.interfaces.values())
       {
-         generateInterface(levelJavaPkg, api, intf);
+         String intfPkg = levelJavaPkg;
+         if (intf.remapPackage != null)
+            intfPkg = intf.remapPackage;
+         generateInterface(intfPkg, api, intf);
       }
       for (Map.Entry<String, Type> entry: api.ambientVars.entrySet())
       {

@@ -3,13 +3,16 @@ package com.user00.domjnate.generator;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.ErrorType;
+import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.tsparser.TsDeclarationsReader;
@@ -119,6 +122,101 @@ public class DomjnateGenerator
       // Remap Intl namespace to lower-case intl
       if (api.namespaces.containsKey("Intl"))
          api.namespaces.get("Intl").remapName = "intl";
+      
+      // Move some classes into different packages so that things are more manageable
+      Set<String> domClasses = Set.of("Attr", "CDATASection", "CharacterData", 
+            "Comment", "Document", "DocumentFragment", "DocumentType", 
+//            "DOMConfiguration", 
+            "DOMError", 
+//            "DOMErrorHandler", 
+            "DOMImplementation", 
+//            "DOMImplementationList", "DOMImplementationSource", "DOMLocator", 
+            "DOMStringList", "Element", 
+//            "Entity", "EntityReference", 
+            "NamedNodeMap", 
+//            "NameList", 
+            "Node", "NodeList", 
+//            "Notation", 
+            "ProcessingInstruction", "Text", 
+//            "TypeInfo", "UserDataHandler", 
+            "DOMException",
+            
+            "ParentNode",
+            "ChildNode",
+            "CustomEvent",
+            "CustomEventInit",
+            "DOMTokenList",
+            "Event",
+            "EventInit",
+            "EventTarget",
+            "MutationObserver",
+            "MutationObserverInit",
+            "MutationRecord",
+            "NodeFilter",
+            "NodeIterator",
+            "NodeListOf",
+            "NonDocumentTypeChildNode",
+            "Range",
+            "TimeRanges",
+            "TreeWalker",
+            "HTMLCollection",
+            "HTMLCollectionBase",
+            "HTMLCollectionOf"
+            );
+      Set<String> webAudioClasses = Set.of("AnalyserNode", "AnalyserOptions",
+            "BaseAudioContext", "BaseAudioContextEventMap", "BiquadFilterNode", "BiquadFilterOptions",
+            "ChannelMergerNode", "ChannelMergerOptions", "ChannelSplitterNode", "ChannelSplitterOptions",
+            "ConstantSourceNode", 
+            "ConstantSourceOptions",
+            "ConvolverNode",
+            "ConvolverOptions",
+            "DelayNode",
+            "DelayOptions",
+            "DynamicsCompressorNode",
+            "DynamicsCompressorOptions",
+            "GainNode",
+            "GainOptions",
+            "IIRFilterNode",
+            "IIRFilterOptions",
+            "MediaElementAudioSourceNode",
+            "MediaElementAudioSourceOptions",
+            "MediaStreamAudioDestinationNode",
+            "MediaStreamAudioSourceNode",
+            "MediaStreamAudioSourceOptions",
+            "OfflineAudioCompletionEvent",
+            "OfflineAudioCompletionEventInit",
+            "OfflineAudioContext",
+            "OfflineAudioContextEventMap",
+            "OfflineAudioContextOptions",
+            "OscillatorNode",
+            "OscillatorOptions",
+            "PannerNode",
+            "PannerOptions",
+            "PeriodicWave",
+            "PeriodicWaveConstraints",
+            "PeriodicWaveOptions",
+            "StereoPannerNode",
+            "StereoPannerOptions",
+            "WaveShaperNode",
+            "WaveShaperOptions"
+            );
+      for (InterfaceDefinition intf: api.interfaces.values())
+      {
+         if (domClasses.contains(intf.name))
+            intf.remapPackage = "dom";
+         else if (intf.name.startsWith("HTML"))
+            intf.remapPackage = "html";
+         else if (intf.name.startsWith("SVG"))
+            intf.remapPackage = "svg";
+         else if (intf.name.startsWith("RTC"))
+            intf.remapPackage = "webrtc";
+         else if (intf.name.startsWith("Speech"))
+            intf.remapPackage = "webspeech";
+         else if (intf.name.startsWith("Audio") || webAudioClasses.contains(intf.name))
+            intf.remapPackage = "webaudio";
+         else if (intf.name.startsWith("WebGL") || intf.name.startsWith("WEBGL")  || intf.name.startsWith("OES_"))
+            intf.remapPackage = "webgl";
+      }
    }
 
 
