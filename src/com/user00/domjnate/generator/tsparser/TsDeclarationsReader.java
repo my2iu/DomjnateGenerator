@@ -739,7 +739,7 @@ public class TsDeclarationsReader
       public Void visitAmbientNamespaceDeclaration(AmbientNamespaceDeclarationContext ctx)
       {
          String name = ctx.identifierPath().getText();
-         ApiDefinition namespace = new ApiDefinition();
+         ApiDefinition namespace = new ApiDefinition(api);
          ctx.ambientNamespaceBody().accept(new TopLevelReader(namespace));
          api.namespaces.put(name, namespace);
          return null;

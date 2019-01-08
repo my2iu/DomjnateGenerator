@@ -8,6 +8,11 @@ import java.util.Map;
  */
 public class ApiDefinition
 {
+   public ApiDefinition(ApiDefinition parent)
+   {
+      this.parent = parent;
+   }
+   public ApiDefinition parent;
    public String remapName = null;
    public Map<String, InterfaceDefinition> interfaces = new HashMap<>();
    public ProblemTracker problems = new ProblemTracker();

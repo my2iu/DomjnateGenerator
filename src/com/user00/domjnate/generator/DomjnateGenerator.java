@@ -36,7 +36,7 @@ public class DomjnateGenerator
    public void go(CharStream[] inputStreams, ApiGenerator generator) throws IOException
    {
       // Read out type information for DOM
-      ApiDefinition api = new ApiDefinition();
+      ApiDefinition api = new ApiDefinition(null);
       for (CharStream input: inputStreams)
       {
          TsIdlParser.DeclarationSourceFileContext libDomTs = TsDeclarationsReader.parseTs(input);
