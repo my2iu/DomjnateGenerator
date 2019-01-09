@@ -219,7 +219,7 @@ public class ApiGenerator
                   out.println("Unhandled type parameters on function interface call signature");
                for (int n = 0; n <= call.optionalParams.size(); n++)
                {
-                  generateMethodWithOptionals(out, "accept", call, api, fullPkg, null, n, false);
+                  generateMethodWithOptionals(out, "accept", call, api, null, fullPkg, null, n, false);
                }
    
             }
@@ -331,7 +331,7 @@ public class ApiGenerator
                for (PropertyDefinition method: intf.methods)
                {
                   imports.add("jsinterop.annotations.JsMethod");
-                  generateMethod(out, method, api, fullPkg);
+                  generateMethod(out, method, api, intf, fullPkg);
                }
                for (IndexSignatureDefinition idxSig: intf.indexSignatures)
                {
@@ -597,7 +597,7 @@ public class ApiGenerator
 
    }
    
-   private void generateMethod(PrintWriter out, PropertyDefinition method, ApiDefinition api, String currentPackage)
+   private void generateMethod(PrintWriter out, PropertyDefinition method, ApiDefinition api, InterfaceDefinition sourceIntf, String currentPackage)
    {
 //      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
 //      {
@@ -623,13 +623,16 @@ public class ApiGenerator
       }
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
-         generateMethodWithOptionals(out, method.name, method.callSigType, api, currentPackage, method.problems, n, true);
+         generateMethodWithOptionals(out, method.name, method.callSigType, api, sourceIntf, currentPackage, method.problems, n, true);
       }
    }
    
-   private void generateMethodWithOptionals(PrintWriter out, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, ProblemTracker methodProblems, int numOptionals, boolean withJsMethodAnnotation)
+   private void generateMethodWithOptionals(PrintWriter out, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, InterfaceDefinition sourceIntf, String currentPackage, ProblemTracker methodProblems, int numOptionals, boolean withJsMethodAnnotation)
    {
       String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage));
+      if (returnType.equals("this") && sourceIntf != null)
+         // TODO: Add generic type arguments
+         returnType = sourceIntf.name;
 
       if (withJsMethodAnnotation)
          out.println(String.format("@JsMethod(name=\"%1$s\")", methodName));

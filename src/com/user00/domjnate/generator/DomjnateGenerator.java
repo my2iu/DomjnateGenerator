@@ -1,10 +1,7 @@
 package com.user00.domjnate.generator;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import org.antlr.v4.runtime.CharStream;
@@ -13,7 +10,6 @@ import org.antlr.v4.runtime.CharStreams;
 import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.ErrorType;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
-import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.tsparser.TsDeclarationsReader;
 import com.user00.domjnate.generator.tsparser.TsIdlParser;
