@@ -5,5 +5,5 @@ import jsinterop.annotations.JsFunction;
 @JsFunction
 public interface EventListener
 {
-void accept(Event e);
+void accept(test.pkg.dom.Event e);
 }

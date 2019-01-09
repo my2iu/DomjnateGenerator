@@ -7,11 +7,11 @@ import jsinterop.annotations.JsType;
 public interface TestEventMap
 {
 @JsProperty(name="mouse")
-Event getMouse();
+test.pkg.dom.Event getMouse();
 @JsProperty(name="mouse")
-void setMouse(Event val);
+void setMouse(test.pkg.dom.Event val);
 @JsProperty(name="keyboard")
-Event getKeyboard();
+test.pkg.dom.Event getKeyboard();
 @JsProperty(name="keyboard")
-void setKeyboard(Event val);
+void setKeyboard(test.pkg.dom.Event val);
 }

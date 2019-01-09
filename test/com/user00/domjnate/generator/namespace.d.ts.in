@@ -10,6 +10,11 @@ declare namespace Intl {
     };
 }
 
+interface HTMLThing
+{
+	a : Intl.Test;
+}
+
 interface Test
 {
 	method(a:Intl.Test) : Intl.Test;

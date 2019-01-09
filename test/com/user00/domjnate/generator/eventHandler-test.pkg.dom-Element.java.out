@@ -1,0 +1,15 @@
+package test.pkg.dom;
+
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
+
+@JsType(isNative=true,name="Element")
+public interface Element
+{
+// TODO: Suppressing generic keyof type parameter for addEventListener
+@JsMethod(name="addEventListener")
+void addEventListener(String type, test.pkg.EventListener listener);
+// TODO: Suppressing generic keyof type parameter for removeEventListener
+@JsMethod(name="removeEventListener")
+void removeEventListener(String type, test.pkg.EventListener listener);
+}

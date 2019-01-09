@@ -116,7 +116,7 @@ public class DomjnateGeneratorTest
       // Special handling of event handlers
       TestGeneratorFileOutputManagerHelper files = new TestGeneratorFileOutputManagerHelper();
       generateFilesFromTs(files, "namespace.d.ts.in");
-      files.compareWithTestFiles(2, this.getClass(), "namespace", ".out");
+      files.compareWithTestFiles(3, this.getClass(), "namespace", ".out");
    }
 
 }

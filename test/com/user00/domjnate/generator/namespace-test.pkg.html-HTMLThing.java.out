@@ -1,0 +1,13 @@
+package test.pkg.html;
+
+import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
+
+@JsType(isNative=true,name="HTMLThing")
+public interface HTMLThing
+{
+@JsProperty(name="a")
+test.pkg.intl.Test getA();
+@JsProperty(name="a")
+void setA(test.pkg.intl.Test val);
+}

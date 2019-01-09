@@ -2,5 +2,6 @@ interface Test
 {
 	method(a, b);
 	method2(a: string) : number;
+	method3() : this;
 	optionalParams(a: string, b?: string, c?:string) : void;
 }

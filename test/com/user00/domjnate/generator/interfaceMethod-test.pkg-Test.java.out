@@ -10,6 +10,8 @@ public interface Test
 java.lang.Object method(java.lang.Object a, java.lang.Object b);
 @JsMethod(name="method2")
 double method2(String a);
+@JsMethod(name="method3")
+Test method3();
 @JsMethod(name="optionalParams")
 void optionalParams(String a);
 @JsMethod(name="optionalParams")

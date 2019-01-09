@@ -1,0 +1,8 @@
+package test.pkg.dom;
+
+import jsinterop.annotations.JsType;
+
+@JsType(isNative=true,name="Event")
+public interface Event
+{
+}
