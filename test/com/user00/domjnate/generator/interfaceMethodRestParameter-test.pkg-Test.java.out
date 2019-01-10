@@ -11,5 +11,5 @@ java.lang.Object method(java.lang.Object a, String... c);
 @JsMethod(name="method")
 java.lang.Object method(java.lang.Object a, java.lang.Object b, String... c);
 @JsMethod(name="method2")
-java.lang.Object method2(java.lang.Object a, java.lang.Object b, void... c);
+java.lang.Object method2(java.lang.Object a, java.lang.Object b, java.lang.Object... c);
 }

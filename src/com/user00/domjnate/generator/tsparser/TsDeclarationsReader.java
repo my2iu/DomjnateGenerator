@@ -14,6 +14,7 @@ import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.ErrorType;
+import com.user00.domjnate.generator.ast.FunctionType;
 import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
@@ -37,6 +38,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ConstructSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.FunctionTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureMappedContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureNumberContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureStringContext;
@@ -165,7 +167,7 @@ public class TsDeclarationsReader
             ref.typeArgs = typeArgs;
          }
          return ref;
-      };
+      }
       
       @Override public Type visitObjectType(ObjectTypeContext ctx) {
          InterfaceDefinition intf = new InterfaceDefinition();
@@ -176,7 +178,13 @@ public class TsDeclarationsReader
          ObjectType objType = new ObjectType();
          objType.intf = intf;
          return objType;
-      };
+      }
+      
+      public Type visitFunctionType(FunctionTypeContext ctx) 
+      {
+         FunctionType fnType = new FunctionType();
+         return fnType;
+      }
    };
    
    static Type parseType(RuleContext ctx)

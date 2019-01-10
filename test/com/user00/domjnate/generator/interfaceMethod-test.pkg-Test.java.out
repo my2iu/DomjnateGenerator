@@ -18,4 +18,6 @@ void optionalParams(String a);
 void optionalParams(String a, String b);
 @JsMethod(name="optionalParams")
 void optionalParams(String a, String b, String c);
+@JsMethod(name="methodCallback")
+void methodCallback(java.lang.Object a);
 }
