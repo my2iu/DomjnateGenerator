@@ -1,6 +1,7 @@
 package com.user00.domjnate.generator;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -61,13 +62,41 @@ public class DomjnateGenerator
                method -> "getElementsByTagNameNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
       }
 
-      // Remove some extra createEvent() and createElementNS() methods on Document
+      // Document has some methods that overlap
       if (api.interfaces.containsKey("Document"))
       {
+         // Remove some extra createEvent() and createElementNS() methods on Document
          api.interfaces.get("Document").methods.removeIf(
                method -> "createElementNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
          api.interfaces.get("Document").methods.removeIf(
                method -> "createEvent".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
+         // Remove some other overlapping methods
+         api.interfaces.get("Document").methods.removeIf(   // 2 versions with almost identical parameters
+               method -> "createElementNS".equals(method.name) && method.callSigType.params.size() == 2 
+                     && method.callSigType.optionalParams.size() == 1 && method.callSigType.optionalParams.get(0).type instanceof TypeReference);
+         api.interfaces.get("Document").methods.removeIf(
+               method -> "createTreeWalker".equals(method.name) && method.callSigType.params.size() == 3 
+                     && method.callSigType.optionalParams.size() == 1);   // deprecated
+         api.interfaces.get("Document").methods.removeIf(
+               method -> "getElementsByTagNameNS".equals(method.name) 
+                     && method.callSigType.params.get(0).type instanceof ErrorType);   // getElementsByTagNameNS with constant string for namespace
+         api.interfaces.get("Document").properties.forEach(
+               prop -> {
+                  if (!prop.name.equals("links")) return;
+                  TypeReference commonSuperType = new TypeReference();
+                  commonSuperType.typeName = "HTMLHyperlinkElementUtils";
+                  ((TypeReference)prop.type).typeArgs.set(0, commonSuperType); 
+               });   // returning a union of two types is messy
+      }
+      
+      // Make HTMLHyperlinkElementUtils also inherit from HTMLElement so that it can be put in an HTMLCollectionOf<> for Document.links
+      if (api.interfaces.containsKey("HTMLHyperlinkElementUtils"))
+      {
+         TypeReference fixUpDocumentLinks = new TypeReference();
+         fixUpDocumentLinks.typeName = "HTMLElement";
+         if (api.interfaces.get("HTMLHyperlinkElementUtils").extendsTypes == null)
+            api.interfaces.get("HTMLHyperlinkElementUtils").extendsTypes = new ArrayList<>();
+         api.interfaces.get("HTMLHyperlinkElementUtils").extendsTypes.add(fixUpDocumentLinks);
       }
       
       // SVGElement.className is deprecated, and it conflicts with Element.className
@@ -157,7 +186,8 @@ public class DomjnateGenerator
             "TreeWalker",
             "HTMLCollection",
             "HTMLCollectionBase",
-            "HTMLCollectionOf"
+            "HTMLCollectionOf",
+            "ElementCreationOptions"
             );
       Set<String> webAudioClasses = Set.of("AnalyserNode", "AnalyserOptions",
             "BaseAudioContext", "BaseAudioContextEventMap", "BiquadFilterNode", "BiquadFilterOptions",
