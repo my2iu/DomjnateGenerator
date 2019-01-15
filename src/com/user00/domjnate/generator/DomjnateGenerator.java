@@ -62,6 +62,20 @@ public class DomjnateGenerator
                method -> "getElementsByTagNameNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
       }
 
+      if (api.interfaces.containsKey("Array"))
+      {
+         // Some methods of Array seem to overlap and are unnecessary
+         api.interfaces.get("Array").methods.removeIf(
+               method -> "reduceRight".equals(method.name) && method.callSigType.params.size() == 2 && method.callSigType.genericTypeParameters == null); 
+         api.interfaces.get("Array").methods.removeIf(
+               method -> "reduce".equals(method.name) && method.callSigType.params.size() == 2 && method.callSigType.genericTypeParameters == null); 
+         
+         // TODO: write a new filter() that only accepts bools instead of truthy values
+         api.interfaces.get("Array").methods.removeIf(
+               method -> "filter".equals(method.name) && method.callSigType.genericTypeParameters != null); 
+         
+      }
+      
       // Document has some methods that overlap
       if (api.interfaces.containsKey("Document"))
       {
