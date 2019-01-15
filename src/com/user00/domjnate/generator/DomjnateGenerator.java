@@ -119,6 +119,10 @@ public class DomjnateGenerator
          api.interfaces.get("SVGElement").properties.removeIf( p -> "className".equals(p.name));
       }
       
+      // Interfaces defined multiple times with different capitalizations (remove the one with the incorrect capitalization and incorrect definition)
+      api.interfaces.remove("RTCDtmfSender");
+      api.interfaces.remove("RTCDtmfSenderEventMap");
+      
       // Remove the String type
       api.interfaces.remove("String");
       

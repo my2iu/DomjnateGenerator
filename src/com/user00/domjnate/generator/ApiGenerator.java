@@ -243,7 +243,7 @@ public class ApiGenerator
             throw new IllegalArgumentException(e);
          }
          
-         outmain.println(String.format("package %1$s;", pkg));
+         outmain.println(String.format("package %1$s;", fullPkg));
          outmain.println();
          List<String> importList = new ArrayList<>(imports);
          Collections.sort(importList);
