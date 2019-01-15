@@ -196,9 +196,9 @@ primaryType:
 	;
 
 primaryTypeIndexable:
-	'[' ']'  // arrayType
-	| '[' typeReference ']' // New rule by me for indexed access operator
-	| '[' KeyOf typeReference ']' // New rule by me for indexed access operator or map types
+	'[' ']'  # primaryTypeIndexableArray  // arrayType
+	| '[' typeReference ']' # primaryTypeIndexableMap // New rule by me for indexed access operator
+	| '[' KeyOf typeReference ']' # primaryTypeIndexableKeyOf // New rule by me for indexed access operator or map types
 	;
 
 parenthesizedType:

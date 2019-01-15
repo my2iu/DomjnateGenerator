@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.ArrayType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.ProblemTracker;
@@ -175,6 +176,16 @@ public class ApiGenerator
          public String visitNullableType(NullableType type)
          {
             return typeString(type.subtype, ctx.withNullable(true));
+         }
+         
+         @Override
+         public String visitArrayType(ArrayType type)
+         {
+            if (ctx.currentPackage != null && !ctx.currentPackage.equals(pkg))
+            {
+               return pkg + ".Array<" + typeString(type.type, ctx.withNullable(true))+ ">";
+            }
+            return "Array<" + typeString(type.type, ctx.withNullable(true))+ ">";
          }
          
          @Override

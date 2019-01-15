@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RuleContext;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.ArrayType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.ErrorType;
@@ -51,6 +52,8 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.ObjectTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.OptionalParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ParameterListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PredefinedTypeContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeIndexableArrayContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PropertySignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RequiredParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.RestParameterContext;
@@ -180,11 +183,34 @@ public class TsDeclarationsReader
          return objType;
       }
       
-      public Type visitFunctionType(FunctionTypeContext ctx) 
+      @Override public Type visitFunctionType(FunctionTypeContext ctx) 
       {
          FunctionType fnType = new FunctionType();
          return fnType;
       }
+      
+      @Override public Type visitPrimaryType(PrimaryTypeContext ctx) 
+      {
+         if (ctx.primaryTypeIndexable() != null)
+         {
+            if (ctx.primaryTypeIndexable() instanceof PrimaryTypeIndexableArrayContext)
+            {
+               ArrayType arrType = new ArrayType();
+               arrType.type = ctx.primaryType().accept(this);
+               return arrType;
+            }
+            else
+               return new ErrorType("Unhandled indexable type");
+         }
+         return super.visitPrimaryType(ctx);
+      }
+      
+//      @Override public Type visitPrimaryTypeIndexableArray(PrimaryTypeIndexableArrayContext ctx) 
+//      {
+//         ArrayType arrType = new ArrayType();
+//         arrType.type = ctx.
+//         return arrType;
+//      }
    };
    
    static Type parseType(RuleContext ctx)

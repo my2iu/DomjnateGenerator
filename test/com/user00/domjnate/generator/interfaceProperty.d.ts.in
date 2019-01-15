@@ -4,4 +4,5 @@ interface Test
 	readonly b: string;
 	c?: any;
 	d?: number;
+	arr: string[];
 }

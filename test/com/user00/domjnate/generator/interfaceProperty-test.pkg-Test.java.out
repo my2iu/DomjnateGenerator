@@ -20,4 +20,8 @@ void setC(java.lang.Object val);
 Double getD();
 @JsProperty(name="d")
 void setD(Double val);
+@JsProperty(name="arr")
+Array<String> getArr();
+@JsProperty(name="arr")
+void setArr(Array<String> val);
 }
