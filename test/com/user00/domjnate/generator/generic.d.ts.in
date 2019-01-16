@@ -1,5 +1,6 @@
 interface GenericIntf<T, Z extends Node>
 {
+	[idx:number]: Z;
 }
 
 interface Test
@@ -8,3 +9,11 @@ interface Test
 	method2(b : GenericIntf<number, number>) : void;
 	promiseVoid () : Promise<void>; 
 }
+
+declare var GenericIntf : {
+	new<T, Z>() : GenericIntf<T, Z>;
+	<T,Z>() : GenericIntf<T, Z>;
+	a : GenericIntf<number, Node>;
+	make() : GenericIntf<string, Node>;
+	makeArr() : GenericIntf<string, Node>[];
+};

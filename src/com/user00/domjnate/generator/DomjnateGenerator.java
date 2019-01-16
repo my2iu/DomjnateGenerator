@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.CharStreams;
 import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.ErrorType;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
+import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.tsparser.TsDeclarationsReader;
 import com.user00.domjnate.generator.tsparser.TsIdlParser;
@@ -125,6 +126,13 @@ public class DomjnateGenerator
       
       // Remove the String type
       api.interfaces.remove("String");
+      
+      // WebGLRenderingContext getExtension() has many variants for hard-coded strings
+      if (api.interfaces.containsKey("WebGLRenderingContextBase"))
+      {
+         api.interfaces.get("WebGLRenderingContextBase").methods.removeIf(
+               method -> "getExtension".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
+      }
       
       // Remove artificial interfaces used to store constructors and static methods
       for (String intfName: Arrays.asList(

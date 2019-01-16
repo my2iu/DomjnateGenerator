@@ -1,8 +1,37 @@
 package test.pkg;
 
+import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsType;
 
 @JsType(isNative=true,name="GenericIntf")
 public interface GenericIntf<T,Z extends Node> 
 {
+@JsOverlay
+public default Z get(double idx) {
+  return (Z)com.user00.domjnate.util.Js.getIndex(this, idx, Z.class);
+}
+@JsOverlay
+public default void set(double idx, Z val) {
+  com.user00.domjnate.util.Js.setIndex(this, idx, val);
+}
+@JsOverlay
+public static GenericIntf<Double, Node> getA(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {
+  com.user00.domjnate.util.EmptyInterface obj = com.user00.domjnate.util.Js.getMember(_win, "GenericIntf", com.user00.domjnate.util.EmptyInterface.class);
+  return com.user00.domjnate.util.Js.getMember(obj, "a", GenericIntf.class);
+}
+@JsOverlay
+public static void setA(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, GenericIntf<Double, Node> val) {
+  com.user00.domjnate.util.EmptyInterface obj = com.user00.domjnate.util.Js.getMember(_win, "GenericIntf", com.user00.domjnate.util.EmptyInterface.class);
+  com.user00.domjnate.util.Js.setMember(obj, "a", val);
+}
+@JsOverlay
+public static GenericIntf<String, Node> make(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {
+  return com.user00.domjnate.util.Js.callStaticMethod(_win, "GenericIntf", "make", GenericIntf.class);
+}
+@JsOverlay
+public static Array<GenericIntf<String, Node>> makeArr(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {
+  return com.user00.domjnate.util.Js.callStaticMethod(_win, "GenericIntf", "makeArr", Array.class);
+}
+Unhandled call on interface with generic type parameters
+Unhandled constructor with generic type parameters
 }
