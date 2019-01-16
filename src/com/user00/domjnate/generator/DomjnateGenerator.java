@@ -316,6 +316,71 @@ public class DomjnateGenerator
             "WaveShaperNode",
             "WaveShaperOptions"
             );
+      Set<String> streamClasses = Set.of(
+            "ByteLengthQueuingStrategy",
+            "CountQueuingStrategy",
+            "ReadableByteStreamController",
+            "ReadableStream",
+            "ReadableStreamBYOBReader",
+            "ReadableStreamBYOBRequest",
+            "ReadableStreamDefaultController",
+            "ReadableStreamDefaultReader",
+            "WritableStream",
+            "WritableStreamDefaultController",
+            "WritableStreamDefaultWriter",
+            
+            "QueuingStrategy",
+            "QueuingStrategySizeCallback",
+            "ReadableByteStreamControllerCallback",
+            "ReadableStreamDefaultControllerCallback",
+            "ReadableStreamErrorCallback",
+            "ReadableStreamReader",
+            "ReadableStreamReadResult",
+            "WritableStreamDefaultControllerCloseCallback",
+            "WritableStreamDefaultControllerStartCallback",
+            "WritableStreamDefaultControllerWriteCallback",
+            "WritableStreamErrorCallback"
+            );
+      Set<String> cryptoClasses = Set.of(
+            "Algorithm",
+            "Crypto",
+            "CryptoKey",
+            "CryptoKeyPair",
+            "RandomSource",
+            "SubtleCrypto",
+            "AesCbcParams",
+            "AesCfbParams",
+            "AesCmacParams",
+            "AesCtrParams",
+            "AesDerivedKeyParams",
+            "AesGcmParams",
+            "AesKeyAlgorithm",
+            "AesKeyGenParams",
+            "ConcatParams",
+            "DhImportKeyParams",
+            "DhKeyAlgorithm",
+            "DhKeyDeriveParams",
+            "DhKeyGenParams",
+            "EcdhKeyDeriveParams",
+            "EcdsaParams",
+            "EcKeyAlgorithm",
+            "EcKeyGenParams",
+            "EcKeyImportParams",
+            "HkdfCtrParams",
+            "HkdfParams",
+            "HmacImportParams",
+            "HmacKeyAlgorithm",
+            "HmacKeyGenParams",
+            "Pbkdf2Params",
+            "RsaHashedImportParams",
+            "RsaHashedKeyAlgorithm",
+            "RsaHashedKeyGenParams",
+            "RsaKeyAlgorithm",
+            "RsaKeyGenParams",
+            "RsaOaepParams",
+            "RsaOtherPrimesInfo",
+            "RsaPssParams"            
+            );
       for (InterfaceDefinition intf: api.interfaces.values())
       {
          if (domClasses.contains(intf.name))
@@ -328,9 +393,13 @@ public class DomjnateGenerator
             intf.remapPackage = "webrtc";
          else if (intf.name.startsWith("Speech"))
             intf.remapPackage = "webspeech";
+         else if (streamClasses.contains(intf.name))
+            intf.remapPackage = "stream";
+         else if (cryptoClasses.contains(intf.name))
+            intf.remapPackage = "webcrypto";
          else if (intf.name.startsWith("Audio") || webAudioClasses.contains(intf.name))
             intf.remapPackage = "webaudio";
-         else if (intf.name.startsWith("WebGL") || intf.name.startsWith("WEBGL")  || intf.name.startsWith("OES_"))
+         else if (intf.name.startsWith("WebGL") || intf.name.startsWith("WEBGL") || intf.name.startsWith("OES_") || intf.name.startsWith("EXT_")  || intf.name.startsWith("ANGLE_"))
             intf.remapPackage = "webgl";
       }
    }
