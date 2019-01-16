@@ -68,6 +68,13 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
          ref += ">";
          typeArgs = ref;
       }
+      if (type.typeName.equals("true"))
+      {
+         if (ctx.typeDescription)
+            return "boolean.class";
+         else
+            return "boolean";
+      }
       // See if we need to use a full package name here
       if (type.typeName.contains("."))
       {

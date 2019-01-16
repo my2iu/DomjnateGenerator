@@ -66,8 +66,13 @@ public class ApiGenerator
    
    String methodName(String name)
    {
-      if ("catch".equals(name))
-         return "_catch";
+      switch(name)
+      {
+      case "catch": return "_catch";
+      case "assert": return "_assert";
+      case "continue": return "_continue";
+      default: break;
+      }
       return name;
    }
 

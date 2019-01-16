@@ -133,12 +133,69 @@ public class DomjnateGenerator
       
       // Remove the String type
       api.interfaces.remove("String");
+      api.interfaces.remove("StringConstructor");
       
       // WebGLRenderingContext getExtension() has many variants for hard-coded strings
       if (api.interfaces.containsKey("WebGLRenderingContextBase"))
       {
          api.interfaces.get("WebGLRenderingContextBase").methods.removeIf(
                method -> "getExtension".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
+      }
+      
+      // Remove variants with hardcoded strings from HTMLCanvasElement.getContext()
+      if (api.interfaces.containsKey("HTMLCanvasElement"))
+      {
+         api.interfaces.get("HTMLCanvasElement").methods.removeIf(
+               method -> "getContext".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
+      }
+      
+      // SVGSVGElement returns a list of a union type, but union types aren't supported in java
+      if (api.interfaces.containsKey("SVGSVGElement"))
+      {
+         api.interfaces.get("SVGSVGElement").methods.forEach(
+               method -> {
+                  if (!method.name.equals("getEnclosureList") && !method.name.equals("getIntersectionList")) return;
+                  TypeReference superType = new TypeReference();
+                  superType.typeName = "SVGGraphicsElement";
+                  ((TypeReference)method.callSigType.returnType).typeArgs.set(0, superType);
+               });
+      }
+      
+      // Avoid union types in HTMLTableRowElement
+      if (api.interfaces.containsKey("HTMLTableRowElement"))
+      {
+         api.interfaces.get("HTMLTableRowElement").properties.forEach(
+               prop -> {
+                  if (!prop.name.equals("cells")) return;
+                  TypeReference superType = new TypeReference();
+                  superType.typeName = "HTMLTableCellElement";
+                  ((TypeReference)prop.type).typeArgs.set(0, superType);
+               });
+      }
+      
+      // HTMLCollectionOf<> and NodeListOf<> clash a little bit with their superclass, but this superclass isn't needed since anything can be cast to anything else
+      if (api.interfaces.containsKey("HTMLCollectionOf"))
+      {
+         api.interfaces.get("HTMLCollectionOf").extendsTypes = null;
+      }
+      if (api.interfaces.containsKey("NodeListOf"))
+      {
+         api.interfaces.get("NodeListOf").extendsTypes = null;
+      }
+      
+      // HTMLEmbedElement declares a hidden property with type any while HTMLElement has a hidden property of type boolean. 
+      // I'll just remove it. The alternate definition doesn't seem to be listed in the MDN docs
+      if (api.interfaces.containsKey("HTMLEmbedElement"))
+      {
+         api.interfaces.get("HTMLEmbedElement").properties.removeIf(
+               prop -> prop.name.equals("hidden"));
+      }
+      
+      // ShadowRoot inherits from DocumentOrShadowRoot twice
+      if (api.interfaces.containsKey("ShadowRoot"))
+      {
+         if (api.interfaces.get("ShadowRoot").extendsTypes.get(2).equals(api.interfaces.get("ShadowRoot").extendsTypes.get(0)))
+            api.interfaces.get("ShadowRoot").extendsTypes.remove(2);
       }
       
       // Remove artificial interfaces used to store constructors and static methods
