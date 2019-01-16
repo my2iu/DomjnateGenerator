@@ -101,11 +101,12 @@ public class ApiGenerator
             
             for (CallSignatureDefinition call: intf.callSignatures)
             {
+               GenericContext generics = new GenericContext(call.genericTypeParameters);
                if (call.genericTypeParameters != null)
                   out.println("Unhandled type parameters on function interface call signature");
                for (int n = 0; n <= call.optionalParams.size(); n++)
                {
-                  generateMethodWithOptionals(out, "accept", call, api, null, fullPkg, null, n, false);
+                  generateMethodWithOptionals(out, "accept", call, api, null, fullPkg, generics, null, n, false);
                }
    
             }
@@ -202,7 +203,7 @@ public class ApiGenerator
                   if (!isFirst)
                      out.print(", ");
                   isFirst = false;
-                  out.print(typeString(typeRef, new TypeStringGenerationContext(api, fullPkg)));
+                  out.print(typeString(typeRef, new TypeStringGenerationContext(api, fullPkg, generics)));
                   typeRef.problems.dump(out);
                }
             }
@@ -213,23 +214,35 @@ public class ApiGenerator
             {
                for (PropertyDefinition prop: intf.properties)
                {
-                  makeProperty(out, name, prop, api, fullPkg, false, imports);
+                  makeProperty(out, name, prop, api, fullPkg, generics, false, imports);
                }
                for (PropertyDefinition method: intf.methods)
                {
                   imports.add("jsinterop.annotations.JsMethod");
-                  generateMethod(out, method, api, intf, fullPkg);
+                  generateMethod(out, method, api, intf, fullPkg, generics);
                }
                for (IndexSignatureDefinition idxSig: intf.indexSignatures)
                {
-                  String returnType = typeString(idxSig.returnType, new TypeStringGenerationContext(api, fullPkg));
-                  String returnTypeDescription = typeString(idxSig.returnType, new TypeStringGenerationContext(api, fullPkg).withTypeDescription(true));
+                  // TODO: Just a temporary handling of wrapping generics to get things to compile
+                  // (this should eventually be handled better)
+                  boolean isReturnGeneric = generics.isGeneric(idxSig.returnType);
+                  
+                  String returnType = typeString(idxSig.returnType, new TypeStringGenerationContext(api, fullPkg, generics));
+                  String returnTypeDescription = typeString(idxSig.returnType, new TypeStringGenerationContext(api, fullPkg, generics).withTypeDescription(true));
                   imports.add("jsinterop.annotations.JsOverlay");
                   if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("number"))
                   {
                      out.println("@JsOverlay");
-                     out.println(String.format("public default %1$s get(double %2$s) {", returnType, idxSig.indexName));
-                     out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getIndex(this, %2$s, %3$s);", returnType, idxSig.indexName, returnTypeDescription));
+                     if (isReturnGeneric)
+                     {
+                        out.println(String.format("public default %1$s get(double %2$s, Class<%1$s> _type) {", returnType, idxSig.indexName));
+                        out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getIndex(this, %2$s, _type);", returnType, idxSig.indexName));
+                     }
+                     else
+                     {
+                        out.println(String.format("public default %1$s get(double %2$s) {", returnType, idxSig.indexName));
+                        out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getIndex(this, %2$s, %3$s);", returnType, idxSig.indexName, returnTypeDescription));
+                     }
                      out.println("}");
                      if (!idxSig.readOnly) 
                      {
@@ -244,7 +257,7 @@ public class ApiGenerator
                }
                for (CallSignatureDefinition construct: intf.constructSignatures)
                {
-                  makeConstructor(out, construct, api, fullPkg, false, imports);
+                  makeConstructor(out, construct, api, fullPkg, generics, false, imports);
                }
                for (CallSignatureDefinition call: intf.callSignatures)
                {
@@ -257,20 +270,20 @@ public class ApiGenerator
                staticIntf.problems.dump(out);
                for (PropertyDefinition prop: staticIntf.properties)
                {
-                  makeProperty(out, name, prop, api, fullPkg, true, imports);
+                  makeProperty(out, name, prop, api, fullPkg, generics, true, imports);
                }
                for (PropertyDefinition method: staticIntf.methods)
                {
                   imports.add("jsinterop.annotations.JsOverlay");
-                  generateStaticMethod(out, name, method, api, fullPkg);
+                  generateStaticMethod(out, name, method, api, fullPkg, generics);
                }
                for (CallSignatureDefinition call: staticIntf.callSignatures)
                {
-                  makeStaticCallOnInterface(out, intf.name, call, api, fullPkg, imports);
+                  makeStaticCallOnInterface(out, intf.name, call, api, fullPkg, generics, imports);
                }
                for (CallSignatureDefinition construct: staticIntf.constructSignatures)
                {
-                  makeConstructor(out, construct, api, fullPkg, true, imports);
+                  makeConstructor(out, construct, api, fullPkg, generics, true, imports);
                }
                for (IndexSignatureDefinition idxSig: staticIntf.indexSignatures)
                {
@@ -302,29 +315,29 @@ public class ApiGenerator
       });
    }
 
-   private void makeStaticCallOnInterface(PrintWriter out, String name, CallSignatureDefinition sig, ApiDefinition api, String currentPackage, Set<String> imports)
+   private void makeStaticCallOnInterface(PrintWriter out, String name, CallSignatureDefinition sig, ApiDefinition api, String currentPackage, GenericContext generics, Set<String> imports)
    {
       sig.problems.dump(out);
       imports.add("jsinterop.annotations.JsOverlay");
       for (int n = 0; n <= sig.optionalParams.size(); n++)
       {
-         makeStaticCallOnInterfaceWithOptionals(out, name, sig, api, currentPackage, n);
+         makeStaticCallOnInterfaceWithOptionals(out, name, sig, api, currentPackage, generics, n);
       }
 
    }
 
-   private void makeStaticCallOnInterfaceWithOptionals(PrintWriter out, String name, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, int numOptionals)
+   private void makeStaticCallOnInterfaceWithOptionals(PrintWriter out, String name, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, GenericContext generics, int numOptionals)
    {
-      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage));
-      String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage).withTypeDescription(true));
+      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics));
+      String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics).withTypeDescription(true));
       String typeArgs = createMethodTypeArgs(out, callSigType);
       out.println("@JsOverlay");
       out.print(String.format("public static %2$s%1$s call(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, typeArgs));
 
-      generateMethodParameters(out, callSigType, api, currentPackage, numOptionals, false, true);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, true);
       out.println(") {");
       out.print(String.format("  return com.user00.domjnate.util.Js.callMethod(_win, \"%2$s\", %1$s", returnTypeDescription, name));
-      generateMethodParameters(out, callSigType, api, currentPackage, numOptionals, false, false);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, false);
       out.println(");");
       out.println("}");
 
@@ -334,13 +347,13 @@ public class ApiGenerator
    }
 
    
-   private void makeConstructor(PrintWriter out, CallSignatureDefinition construct, ApiDefinition api, String currentPackage, boolean isStatic, Set<String> imports)
+   private void makeConstructor(PrintWriter out, CallSignatureDefinition construct, ApiDefinition api, String currentPackage, GenericContext generics, boolean isStatic, Set<String> imports)
    {
       construct.problems.dump(out);
       imports.add("jsinterop.annotations.JsOverlay");
       for (int n = 0; n <= construct.optionalParams.size(); n++)
       {
-         generateConstructWithOptionals(out, construct, api, currentPackage, n, isStatic);
+         generateConstructWithOptionals(out, construct, api, currentPackage, generics, n, isStatic);
       }
 
    }
@@ -372,19 +385,19 @@ public class ApiGenerator
       return typeArgs;
    }
    
-   private void generateConstructWithOptionals(PrintWriter out, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, int numOptionals, boolean isStatic)
+   private void generateConstructWithOptionals(PrintWriter out, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, GenericContext generics, int numOptionals, boolean isStatic)
    {
-      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage));
-      String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage).withTypeDescription(true));
+      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics));
+      String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics).withTypeDescription(true));
       String typeArgs = createMethodTypeArgs(out, callSigType);
       out.println("@JsOverlay");
       out.print(String.format("public %2$s %3$s%1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, isStatic ? "static" : "default", typeArgs));
 
-      generateMethodParameters(out, callSigType, api, currentPackage, numOptionals, false, true);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, true);
       out.println(") {");
       out.println(String.format("  java.lang.Object constructor = com.user00.domjnate.util.Js.getConstructor(_win, \"%1$s\");", returnType));
       out.print(String.format("  return com.user00.domjnate.util.Js.construct(_win, constructor, %1$s", returnTypeDescription));
-      generateMethodParameters(out, callSigType, api, currentPackage, numOptionals, false, false);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, false);
       out.println(");");
       out.println("}");
 
@@ -394,7 +407,7 @@ public class ApiGenerator
    }
 
    private void generateMethodParameters(PrintWriter out, CallSignatureDefinition callSigType, 
-         ApiDefinition api, String currentPackage, 
+         ApiDefinition api, String currentPackage, GenericContext generics, 
          int numOptionals, boolean isFirst, boolean withTypes)
    {
       for (CallParameter param: callSigType.params)
@@ -403,7 +416,7 @@ public class ApiGenerator
          isFirst = false;
          if (withTypes) 
          {
-            String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage));
+            String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage, generics));
             out.print(paramType + " ");
          }
          out.print(param.name);
@@ -415,7 +428,7 @@ public class ApiGenerator
          isFirst = false;
          if (withTypes) 
          {
-            String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage));
+            String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage, generics));
             out.print(paramType + " ");
          }
          out.print(param.name);
@@ -427,7 +440,7 @@ public class ApiGenerator
          isFirst = false;
          if (withTypes) 
          {
-            String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage).withStripArray(true));
+            String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage, generics).withStripArray(true));
             out.print(paramType);
             out.print("... ");
          }
@@ -435,7 +448,7 @@ public class ApiGenerator
       }
    }
 
-   private void makeProperty(PrintWriter out, String className, PropertyDefinition prop, ApiDefinition api, String currentPackage, boolean isStatic, Set<String> imports)
+   private void makeProperty(PrintWriter out, String className, PropertyDefinition prop, ApiDefinition api, String currentPackage, GenericContext generics, boolean isStatic, Set<String> imports)
    {
       if (prop.type != null && prop.type instanceof TypeQueryType)
       {
@@ -446,8 +459,8 @@ public class ApiGenerator
       String typeDescription = "java.lang.Object";
       if (prop.type != null)
       {
-         type = typeString(prop.type, new TypeStringGenerationContext(api, currentPackage).withNullable(prop.optional));
-         typeDescription = typeString(prop.type, new TypeStringGenerationContext(api, currentPackage).withTypeDescription(true));
+         type = typeString(prop.type, new TypeStringGenerationContext(api, currentPackage, generics).withNullable(prop.optional));
+         typeDescription = typeString(prop.type, new TypeStringGenerationContext(api, currentPackage, generics).withTypeDescription(true));
          prop.type.problems.dump(out);
       }
       if (!isStatic)
@@ -504,18 +517,8 @@ public class ApiGenerator
 
    }
    
-   private void generateMethod(PrintWriter out, PropertyDefinition method, ApiDefinition api, InterfaceDefinition sourceIntf, String currentPackage)
+   private void generateMethod(PrintWriter out, PropertyDefinition method, ApiDefinition api, InterfaceDefinition sourceIntf, String currentPackage, GenericContext generics)
    {
-//      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
-//      {
-//         out.println("// TODO: Suppressing addEventListener with typed events");
-//         return;
-//      }
-//      if ("removeEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
-//      {
-//         out.println("// TODO: Suppressing removeEventListener with typed events");
-//         return;
-//      }
       if (method.callSigType.genericTypeParameters != null)
       {
          // Ignore keyof generic type parameters for now
@@ -530,13 +533,13 @@ public class ApiGenerator
       }
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
-         generateMethodWithOptionals(out, method.name, method.callSigType, api, sourceIntf, currentPackage, method.problems, n, true);
+         generateMethodWithOptionals(out, method.name, method.callSigType, api, sourceIntf, currentPackage, generics, method.problems, n, true);
       }
    }
    
-   private void generateMethodWithOptionals(PrintWriter out, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, InterfaceDefinition sourceIntf, String currentPackage, ProblemTracker methodProblems, int numOptionals, boolean withJsMethodAnnotation)
+   private void generateMethodWithOptionals(PrintWriter out, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, InterfaceDefinition sourceIntf, String currentPackage, GenericContext generics, ProblemTracker methodProblems, int numOptionals, boolean withJsMethodAnnotation)
    {
-      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage));
+      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics));
       if (returnType.equals("this") && sourceIntf != null)
          // TODO: Add generic type arguments
          returnType = sourceIntf.name;
@@ -549,7 +552,7 @@ public class ApiGenerator
       }
       boolean isFirst = true;
       out.print(String.format("%1$s %2$s(", returnType, methodName(methodName)));
-      generateMethodParameters(out, callSigType, api, currentPackage, numOptionals, isFirst, true);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, isFirst, true);
       out.println(");");
       if (methodProblems != null)
          methodProblems.dump(out);
@@ -558,18 +561,8 @@ public class ApiGenerator
          param.problems.dump(out);
    }
 
-   private void generateStaticMethod(PrintWriter out, String className, PropertyDefinition method, ApiDefinition api, String currentPackage)
+   private void generateStaticMethod(PrintWriter out, String className, PropertyDefinition method, ApiDefinition api, String currentPackage, GenericContext generics)
    {
-//      if ("addEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
-//      {
-//         out.println("// TODO: Suppressing addEventListener with typed events");
-//         return;
-//      }
-//      if ("removeEventListener".equals(method.name) && method.callSigType.genericTypeParameters != null)
-//      {
-//         out.println("// TODO: Suppressing removeEventListener with typed events");
-//         return;
-//      }
       if (method.callSigType.genericTypeParameters != null)
       {
          // Ignore keyof generic type parameters for now
@@ -584,15 +577,15 @@ public class ApiGenerator
       }
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
-         generateStaticMethodWithOptionals(out, className, method.name, method.callSigType, api, currentPackage, method.problems, n);
+         generateStaticMethodWithOptionals(out, className, method.name, method.callSigType, api, currentPackage, generics, method.problems, n);
       }
    }
    
 
-   private void generateStaticMethodWithOptionals(PrintWriter out, String className, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, ProblemTracker methodProblems, int numOptionals)
+   private void generateStaticMethodWithOptionals(PrintWriter out, String className, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, GenericContext generics, ProblemTracker methodProblems, int numOptionals)
    {
-      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage));
-      String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage).withTypeDescription(true));
+      String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics));
+      String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics).withTypeDescription(true));
 
       out.println("@JsOverlay");
       out.print("public static ");
@@ -603,13 +596,13 @@ public class ApiGenerator
       boolean isFirst = true;
       out.print(String.format("%1$s %2$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, methodName(methodName)));
       isFirst = false;
-      generateMethodParameters(out, callSigType, api, currentPackage, numOptionals, isFirst, true);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, isFirst, true);
       out.println(") {");
       out.print("  ");
       if (!returnType.equals("void"))
          out.print("return ");
       out.print(String.format("com.user00.domjnate.util.Js.callStaticMethod(_win, \"%1$s\", \"%2$s\", %3$s", className, methodName, returnTypeDescription));
-      generateMethodParameters(out, callSigType, api, currentPackage, numOptionals, false, false);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, false);
       out.println(");");
       out.println("}");
       if (methodProblems != null)
