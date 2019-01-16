@@ -13,7 +13,7 @@ interface Test2
 
 declare var Test2 : {
 	new() : Test2;
-	new(a : number, b? : string, ...c:number) : Test2;
+	new(a : number, b? : string, ...c:number[]) : Test2;
 	prototype : Node;
 	method(a : string) : void;
 	method2() : number;
@@ -22,7 +22,7 @@ declare var Test2 : {
 interface Math
 {
 	E:number;
-	min<T>(...a:T) : number;
+	min<T>(...a:T[]) : number;
 	(a:string) : number;
 }
 

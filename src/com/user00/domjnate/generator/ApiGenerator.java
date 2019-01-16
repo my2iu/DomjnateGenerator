@@ -89,30 +89,38 @@ public class ApiGenerator
       public boolean nullable;
       public boolean typeDescription;
       public boolean genericParameter;
+      public boolean stripArray;
       TypeStringGenerationContext copy()
       {
          TypeStringGenerationContext ctx = new TypeStringGenerationContext(namespaceScope, currentPackage);
          ctx.nullable = nullable;
          ctx.typeDescription = typeDescription;
          ctx.genericParameter = genericParameter;
+         ctx.stripArray = stripArray;
          return ctx;
       }
-      TypeStringGenerationContext withNullable(boolean nullable)
+      TypeStringGenerationContext withNullable(boolean withNullable)
       {
          TypeStringGenerationContext ctx = copy();
-         ctx.nullable = nullable;
+         ctx.nullable = withNullable;
          return ctx;
       }
-      TypeStringGenerationContext withTypeDescription(boolean typeDescription)
+      TypeStringGenerationContext withTypeDescription(boolean withTypeDescription)
       {
          TypeStringGenerationContext ctx = copy();
-         ctx.typeDescription = typeDescription;
+         ctx.typeDescription = withTypeDescription;
          return ctx;
       }
-      TypeStringGenerationContext withGenericParameter(boolean genericParameter)
+      TypeStringGenerationContext withGenericParameter(boolean withGenericParameter)
       {
          TypeStringGenerationContext ctx = copy();
-         ctx.genericParameter = genericParameter;
+         ctx.genericParameter = withGenericParameter;
+         return ctx;
+      }
+      TypeStringGenerationContext withStripArray(boolean withStripArray)
+      {
+         TypeStringGenerationContext ctx = copy();
+         ctx.stripArray = withStripArray;
          return ctx;
       }
    }
@@ -217,6 +225,8 @@ public class ApiGenerator
          @Override
          public String visitArrayType(ArrayType type)
          {
+            if (ctx.stripArray)
+               return typeString(type.type, ctx.withStripArray(false));
             String pkgPrefix = "";
             if (ctx.currentPackage != null && !ctx.currentPackage.equals(pkg))
             {
@@ -594,7 +604,7 @@ public class ApiGenerator
          isFirst = false;
          if (withTypes) 
          {
-            String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage));
+            String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage).withStripArray(true));
             out.print(paramType);
             out.print("... ");
          }
