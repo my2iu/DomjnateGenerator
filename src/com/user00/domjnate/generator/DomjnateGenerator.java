@@ -74,7 +74,14 @@ public class DomjnateGenerator
          // TODO: write a new filter() that only accepts bools instead of truthy values
          api.interfaces.get("Array").methods.removeIf(
                method -> "filter".equals(method.name) && method.callSigType.genericTypeParameters != null); 
-         
+      }
+      if (api.interfaces.containsKey("ArrayConstructor"))
+      {
+         // Constructors come in generic version and "any" version. Remove the "any" version so everything is properly typed
+         api.interfaces.get("ArrayConstructor").constructSignatures.removeIf(
+               construct -> construct.genericTypeParameters == null); 
+         api.interfaces.get("ArrayConstructor").callSignatures.removeIf(
+               call -> call.genericTypeParameters == null); 
       }
       
       // Document has some methods that overlap
