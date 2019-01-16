@@ -10,7 +10,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +18,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
-import com.user00.domjnate.generator.ast.ArrayType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.ProblemTracker;
@@ -27,15 +25,11 @@ import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
-import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.ObjectType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
-import com.user00.domjnate.generator.ast.Type.TypeVisitor;
-
 import com.user00.domjnate.generator.ast.TypeQueryType;
 import com.user00.domjnate.generator.ast.TypeReference;
-import com.user00.domjnate.generator.ast.UnionType;
 
 public class ApiGenerator
 {
@@ -76,184 +70,12 @@ public class ApiGenerator
          return "_catch";
       return name;
    }
-   
-   public static class TypeStringGenerationContext
-   {
-      public TypeStringGenerationContext(ApiDefinition namespaceScope, String currentPackage)
-      {
-         this.namespaceScope = namespaceScope;
-         this.currentPackage = currentPackage;
-      }
-      public ApiDefinition namespaceScope;
-      public String currentPackage;
-      public boolean nullable;
-      public boolean typeDescription;
-      public boolean genericParameter;
-      public boolean stripArray;
-      TypeStringGenerationContext copy()
-      {
-         TypeStringGenerationContext ctx = new TypeStringGenerationContext(namespaceScope, currentPackage);
-         ctx.nullable = nullable;
-         ctx.typeDescription = typeDescription;
-         ctx.genericParameter = genericParameter;
-         ctx.stripArray = stripArray;
-         return ctx;
-      }
-      TypeStringGenerationContext withNullable(boolean withNullable)
-      {
-         TypeStringGenerationContext ctx = copy();
-         ctx.nullable = withNullable;
-         return ctx;
-      }
-      TypeStringGenerationContext withTypeDescription(boolean withTypeDescription)
-      {
-         TypeStringGenerationContext ctx = copy();
-         ctx.typeDescription = withTypeDescription;
-         return ctx;
-      }
-      TypeStringGenerationContext withGenericParameter(boolean withGenericParameter)
-      {
-         TypeStringGenerationContext ctx = copy();
-         ctx.genericParameter = withGenericParameter;
-         return ctx;
-      }
-      TypeStringGenerationContext withStripArray(boolean withStripArray)
-      {
-         TypeStringGenerationContext ctx = copy();
-         ctx.stripArray = withStripArray;
-         return ctx;
-      }
-   }
-   
+
    String typeString(Type basicType, TypeStringGenerationContext ctx)
    {
-      if (basicType == null)
-      {
-         if (ctx.typeDescription)
-            return "java.lang.Object.class";
-         else
-            return "java.lang.Object";
-      }
-      return basicType.visit(new TypeVisitor<String>() {
-         @Override
-         public String visitPredefinedType(PredefinedType basicType)
-         {
-            String type = "java.lang.Object";
-            switch(basicType.type)
-            {
-            case "any": type = "java.lang.Object"; break;
-            case "number": type = (ctx.nullable || ctx.genericParameter) ? "Double" : "double"; break;
-            case "string": type = "String"; break;
-            case "boolean": type = (ctx.nullable || ctx.genericParameter) ? "Boolean" : "boolean"; break;
-            case "void": type = (ctx.nullable || ctx.genericParameter) ? "Void" : "void"; break;
-            default: type = "unknown"; break;
-            }
-            if (ctx.typeDescription)
-               return type + ".class";
-            else
-               return type;
-         }
-         @Override
-         public String visitTypeReferenceType(TypeReference type)
-         {
-            // TODO: Should type aliases recurse?
-            if (ctx.namespaceScope.typeAliases.containsKey(type.typeName))
-            {
-               return typeString(ctx.namespaceScope.typeAliases.get(type.typeName), ctx);
-            }
-            if (topLevel.typeAliases.containsKey(type.typeName))
-            {
-               return typeString(topLevel.typeAliases.get(type.typeName), ctx);
-            }
-            String typeArgs = "";
-            if (type.typeArgs != null)
-            {
-               String ref = "";
-               ref += "<";
-               boolean isFirst = true;
-               for (Type typeArg: type.typeArgs)
-               {
-                  if (!isFirst) ref += ", ";
-                  isFirst = false;
-                  ref += typeString(typeArg, ctx.withGenericParameter(true));
-               }
-               ref += ">";
-               typeArgs = ref;
-            }
-            // See if we need to use a full package name here
-            if (type.typeName.contains("."))
-            {
-               // We're referring to a type in another namespace, so show the
-               // package name with the type name to be safe
-               String[] parts = type.typeName.split("[.]");
-               ApiDefinition api = topLevel;
-               for (String p: Arrays.copyOf(parts, parts.length - 1))
-                  api = api.namespaces.get(p);
-               InterfaceDefinition referredIntf = api.interfaces.get(parts[parts.length - 1]);
-               if (ctx.typeDescription)
-                  return getFullPackageForInterface(api, referredIntf) + "." + referredIntf.name + ".class";
-               else
-                  return getFullPackageForInterface(api, referredIntf) + "." + referredIntf.name + typeArgs;
-            }
-            if (ctx.namespaceScope.interfaces.containsKey(type.typeName))
-            {
-               // We're currently in a namespace and are referring to another
-               // type in the same namespace. We'll return the full type with
-               // package name to be safe.
-               // TODO: I'm ignoring this for now
-               String otherPkg = getFullPackageForInterface(ctx.namespaceScope, ctx.namespaceScope.interfaces.get(type.typeName));
-               if (!otherPkg.equals(ctx.currentPackage))
-               {
-                  if (ctx.typeDescription)
-                     return otherPkg + "." + ctx.namespaceScope.interfaces.get(type.typeName).name + ".class";
-                  else
-                     return otherPkg + "." + ctx.namespaceScope.interfaces.get(type.typeName).name + typeArgs; 
-               }
-            }
-            if (ctx.typeDescription)
-               return type.typeName + ".class";
-            else
-               return type.typeName + typeArgs;
-         }
-         
-         @Override
-         public String visitNullableType(NullableType type)
-         {
-            return typeString(type.subtype, ctx.withNullable(true));
-         }
-         
-         @Override
-         public String visitArrayType(ArrayType type)
-         {
-            if (ctx.stripArray)
-               return typeString(type.type, ctx.withStripArray(false));
-            String pkgPrefix = "";
-            if (ctx.currentPackage != null && !ctx.currentPackage.equals(pkg))
-            {
-               pkgPrefix = pkg + ".";
-            }
-            if (ctx.typeDescription)
-               return pkgPrefix + "Array.class";
-            else
-               return pkgPrefix + "Array<" + typeString(type.type, ctx.withGenericParameter(true))+ ">";
-         }
-         
-         @Override
-         public String visitUnionType(UnionType type)
-         {
-            return super.visitUnionType(type);
-         }
-         
-         @Override
-         public String visitType(Type type)
-         {
-            if (ctx.typeDescription)
-               return "java.lang.Object.class";
-            else
-               return "java.lang.Object";
-         }
-      });
+      return TypeStringGenerator.typeString(this, basicType, ctx);
    }
+
 
    void generateFunctionInterface(InterfaceDefinition intf, ApiDefinition api) throws IOException
    {
@@ -366,6 +188,7 @@ public class ApiGenerator
             imports.add("jsinterop.annotations.JsType");
             out.println(String.format("@JsType(isNative=true,name=\"%1$s\")", name));
             out.print(String.format("public interface %1$s", name));
+            GenericContext generics = new GenericContext(intf.genericTypeParams);
             if (intf.genericTypeParams != null)
             {
                generateGenericTypeParams(out, intf.genericTypeParams);
