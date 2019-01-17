@@ -7,8 +7,8 @@ import jsinterop.annotations.JsType;
 public interface GenericIntf<T,Z extends Node> 
 {
 @JsOverlay
-public default Z get(double idx) {
-  return (Z)com.user00.domjnate.util.Js.getIndex(this, idx, Z.class);
+public default Z get(double idx, Class<Z> _type) {
+  return (Z)com.user00.domjnate.util.Js.getIndex(this, idx, _type);
 }
 @JsOverlay
 public default void set(double idx, Z val) {

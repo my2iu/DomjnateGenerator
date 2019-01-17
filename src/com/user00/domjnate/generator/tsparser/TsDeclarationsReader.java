@@ -40,6 +40,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeCo
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ConstructSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.FunctionTypeContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureMappedContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureNumberContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureStringContext;
@@ -646,25 +647,40 @@ public class TsDeclarationsReader
       @Override
       public Void visitIndexSignatureString(IndexSignatureStringContext ctx)
       {
-         intf.problems.add("Unhandled index signature string");
+         PredefinedType type = new PredefinedType();
+         type.type = "string";
+         intf.indexSignatures.add(createIndexSignature(
+               ctx.bindingIdentifier().getText(),
+               ctx.propertySignatureReadOnly() != null,
+               ctx.typeAnnotation(),
+               type));
          return null;
       }
 
       @Override
       public Void visitIndexSignatureNumber(IndexSignatureNumberContext ctx)
       {
-         IndexSignatureDefinition idxSig = new IndexSignatureDefinition();
-         idxSig.indexName = ctx.bindingIdentifier().getText();
-         idxSig.readOnly = ctx.propertySignatureReadOnly() != null;
          PredefinedType numberType = new PredefinedType();
          numberType.type = "number";
-         idxSig.indexType = numberType;
-         if (ctx.typeAnnotation() != null)
-            idxSig.returnType = parseType(ctx.typeAnnotation().type());
-         intf.indexSignatures.add(idxSig);
+         intf.indexSignatures.add(createIndexSignature(
+               ctx.bindingIdentifier().getText(),
+               ctx.propertySignatureReadOnly() != null,
+               ctx.typeAnnotation(),
+               numberType));
          return null;
       }
 
+      private IndexSignatureDefinition createIndexSignature(String name, boolean readOnly, TypeAnnotationContext typeAnnotation, Type indexType)
+      {
+         IndexSignatureDefinition idxSig = new IndexSignatureDefinition();
+         idxSig.indexName = name;
+         idxSig.readOnly = readOnly;
+         idxSig.indexType = indexType;
+         if (typeAnnotation != null)
+            idxSig.returnType = parseType(typeAnnotation.type());
+         return idxSig;
+      }
+      
       @Override
       public Void visitCallSignature(CallSignatureContext ctx)
       {

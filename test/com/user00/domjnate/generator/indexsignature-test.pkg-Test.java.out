@@ -3,12 +3,19 @@ package test.pkg;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsType;
 
-Unhandled index signature string
 @JsType(isNative=true,name="Test")
 public interface Test
 {
 @JsOverlay
 public default Node get(double a) {
   return (Node)com.user00.domjnate.util.Js.getIndex(this, a, Node.class);
+}
+@JsOverlay
+public default double get(String a) {
+  return (double)com.user00.domjnate.util.Js.getMember(this, a, double.class);
+}
+@JsOverlay
+public default void set(String a, double val) {
+  com.user00.domjnate.util.Js.setMember(this, a, val);
 }
 }

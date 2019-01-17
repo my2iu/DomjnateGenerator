@@ -257,6 +257,28 @@ public class ApiGenerator
                         out.println("}");
                      }
                   }
+                  else if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("string"))
+                  {
+                     out.println("@JsOverlay");
+                     if (isReturnGeneric)
+                     {
+                        out.println(String.format("public default %1$s get(String %2$s, Class<%1$s> _type) {", returnType, idxSig.indexName));
+                        out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getMember(this, %2$s, _type);", returnType, idxSig.indexName));
+                     }
+                     else
+                     {
+                        out.println(String.format("public default %1$s get(String %2$s) {", returnType, idxSig.indexName));
+                        out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getMember(this, %2$s, %3$s);", returnType, idxSig.indexName, returnTypeDescription));
+                     }
+                     out.println("}");
+                     if (!idxSig.readOnly) 
+                     {
+                        out.println("@JsOverlay");
+                        out.println(String.format("public default void set(String %2$s, %1$s val) {", returnType, idxSig.indexName));
+                        out.println(String.format("  com.user00.domjnate.util.Js.setMember(this, %2$s, val);", returnType, idxSig.indexName));
+                        out.println("}");
+                     }
+                  }
                   else
                      out.println("Unhandled index signature on interface");
                }
