@@ -75,6 +75,18 @@ public class DomjnateGenerator
          api.interfaces.get("Array").methods.removeIf(
                method -> "filter".equals(method.name) && method.callSigType.genericTypeParameters != null); 
       }
+      if (api.interfaces.containsKey("ReadonlyArray"))
+      {
+         // Some methods of ReadonlyArray seem to overlap and are unnecessary
+         api.interfaces.get("ReadonlyArray").methods.removeIf(
+               method -> "reduceRight".equals(method.name) && method.callSigType.params.size() == 2 && method.callSigType.genericTypeParameters == null); 
+         api.interfaces.get("ReadonlyArray").methods.removeIf(
+               method -> "reduce".equals(method.name) && method.callSigType.params.size() == 2 && method.callSigType.genericTypeParameters == null); 
+         
+         // TODO: write a new filter() that only accepts bools instead of truthy values
+         api.interfaces.get("ReadonlyArray").methods.removeIf(
+               method -> "filter".equals(method.name) && method.callSigType.genericTypeParameters != null); 
+      }
       if (api.interfaces.containsKey("ArrayConstructor"))
       {
          // Constructors come in generic version and "any" version. Remove the "any" version so everything is properly typed
@@ -196,6 +208,22 @@ public class DomjnateGenerator
       {
          if (api.interfaces.get("ShadowRoot").extendsTypes.get(2).equals(api.interfaces.get("ShadowRoot").extendsTypes.get(0)))
             api.interfaces.get("ShadowRoot").extendsTypes.remove(2);
+      }
+      
+      // The type of Element.returnValue clashes with BeforeUnloadEvent.returnValue
+      // Event.returnValue is never used in practice, and it's deprecated, so I'll just remove it to resolve the conflict
+      if (api.interfaces.containsKey("Event"))
+      {
+         api.interfaces.get("Event").properties.removeIf(
+               prop -> prop.name.equals("returnValue"));
+      }
+      
+      // MediaList seems to have a toString() method that returns number for some reason.
+      // I'll just remove it entirely.
+      if (api.interfaces.containsKey("MediaList"))
+      {
+         api.interfaces.get("MediaList").methods.removeIf(
+               method -> method.name.equals("toString"));
       }
       
       // Remove artificial interfaces used to store constructors and static methods
