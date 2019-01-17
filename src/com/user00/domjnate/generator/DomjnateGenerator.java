@@ -339,7 +339,15 @@ public class DomjnateGenerator
             "WritableStreamDefaultControllerCloseCallback",
             "WritableStreamDefaultControllerStartCallback",
             "WritableStreamDefaultControllerWriteCallback",
-            "WritableStreamErrorCallback"
+            "WritableStreamErrorCallback",
+            "Transformer",
+            "TransformStream",
+            "TransformStreamDefaultController",
+            "TransformStreamDefaultControllerCallback",
+            "TransformStreamDefaultControllerTransformCallback",
+            "UnderlyingByteSource",
+            "UnderlyingSink",
+            "UnderlyingSource"
             );
       Set<String> cryptoClasses = Set.of(
             "Algorithm",
@@ -379,26 +387,79 @@ public class DomjnateGenerator
             "RsaKeyGenParams",
             "RsaOaepParams",
             "RsaOtherPrimesInfo",
-            "RsaPssParams"            
+            "RsaPssParams",
+            "KeyAlgorithm"
+            );
+      Set<String> mediaSourceExtensionsClasses = Set.of(
+            "MediaSource",
+            "SourceBuffer",
+            "SourceBufferList",
+            "VideoPlaybackQuality"
+            );
+      Set<String> mediaCaptureAndStreamsClasses = Set.of(
+            "MediaDeviceInfo",
+            "MediaDevices",
+            "MediaDevicesEventMap",
+            "MediaStream",
+            "MediaStreamConstraints",
+            "MediaStreamError",
+            "MediaStreamErrorEvent",
+            "MediaStreamErrorEventInit",
+            "MediaStreamEvent",
+            "MediaStreamEventInit",
+            "MediaStreamEventMap",
+            "MediaStreamTrack",
+            "MediaStreamTrackAudioSourceNode",
+            "MediaStreamTrackAudioSourceOptions",
+            "MediaStreamTrackEvent",
+            "MediaStreamTrackEventInit",
+            "MediaStreamTrackEventMap",
+            "MediaTrackCapabilities",
+            "MediaTrackConstraints",
+            "MediaTrackConstraintSet",
+            "MediaTrackSettings",
+            "MediaTrackSupportedConstraints",
+            "NavigatorUserMedia",
+            "NavigatorUserMediaErrorCallback",
+            "NavigatorUserMediaSuccessCallback",
+            "ConstrainBooleanParameters",
+            "ConstrainDOMStringParameters",
+            "ConstrainDoubleRange",
+            "ConstrainLongRange",
+            "ConstrainVideoFacingModeParameters",
+            "DoubleRange",
+            "LongRange"
             );
       for (InterfaceDefinition intf: api.interfaces.values())
       {
          if (domClasses.contains(intf.name))
             intf.remapPackage = "dom";
-         else if (intf.name.startsWith("HTML"))
+         else if (intf.name.startsWith("HTML") || intf.name.equals("GetSVGDocument"))
             intf.remapPackage = "html";
          else if (intf.name.startsWith("SVG"))
             intf.remapPackage = "svg";
-         else if (intf.name.startsWith("RTC"))
+         else if (intf.name.startsWith("RTC") || intf.name.equals("webkitRTCPeerConnection"))
             intf.remapPackage = "webrtc";
+         else if (intf.name.startsWith("IDB"))
+            intf.remapPackage = "indexeddb";
          else if (intf.name.startsWith("Speech"))
             intf.remapPackage = "webspeech";
          else if (streamClasses.contains(intf.name))
             intf.remapPackage = "stream";
          else if (cryptoClasses.contains(intf.name))
             intf.remapPackage = "webcrypto";
+         else if (mediaSourceExtensionsClasses.contains(intf.name))
+            intf.remapPackage = "mse";
+         else if (mediaCaptureAndStreamsClasses.contains(intf.name))
+            intf.remapPackage = "mediastream";
          else if (intf.name.startsWith("Audio") || webAudioClasses.contains(intf.name))
             intf.remapPackage = "webaudio";
+         else if (intf.name.startsWith("Performance"))
+            intf.remapPackage = "performance";
+         else if (intf.name.startsWith("VTT") || intf.name.startsWith("TextTrack"))
+            intf.remapPackage = "webvtt";
+         else if (intf.name.startsWith("MediaKey") || intf.name.startsWith("MediaEncrypted"))
+            intf.remapPackage = "eme";
          else if (intf.name.startsWith("WebGL") || intf.name.startsWith("WEBGL") || intf.name.startsWith("OES_") || intf.name.startsWith("EXT_")  || intf.name.startsWith("ANGLE_"))
             intf.remapPackage = "webgl";
       }
