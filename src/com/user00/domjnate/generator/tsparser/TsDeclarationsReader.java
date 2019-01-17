@@ -300,7 +300,10 @@ public class TsDeclarationsReader
             }
          }
          if (ctx.typeParameterDefault() != null)
-            genericParam.problems.add("Unhandled type parameter default");
+         {
+            // Actually, I think we can just ignore type parameter defaults
+//            genericParam.problems.add("Unhandled type parameter default");
+         }
          return Collections.singletonList(genericParam);
       } 
    };

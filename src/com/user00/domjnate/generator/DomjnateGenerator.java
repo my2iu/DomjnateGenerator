@@ -286,6 +286,19 @@ public class DomjnateGenerator
          });
       }
       
+      // Properties whose value are the literal string "bytes" will be changed to have type string
+      if (api.interfaces.containsKey("UnderlyingByteSource"))
+      {
+         PredefinedType stringType = new PredefinedType();
+         stringType.type = "string";
+         api.interfaces.get("UnderlyingByteSource").properties.forEach(
+               prop -> {
+                  if (prop.name.equals("type"))
+                     prop.type = stringType;
+               });
+         
+      }
+      
       // Remove artificial interfaces used to store constructors and static methods
       for (String intfName: Arrays.asList(
             "URIErrorConstructor",

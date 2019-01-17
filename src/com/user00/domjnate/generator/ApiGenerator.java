@@ -71,6 +71,7 @@ public class ApiGenerator
       case "catch": return "_catch";
       case "assert": return "_assert";
       case "continue": return "_continue";
+      case "for": return "_for";
       default: break;
       }
       return name;
@@ -80,7 +81,6 @@ public class ApiGenerator
    {
       switch(name)
       {
-      case "for": return "_for";
       case "this": return "_this";
       default: break;
       }
