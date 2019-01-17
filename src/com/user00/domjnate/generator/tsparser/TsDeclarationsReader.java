@@ -295,8 +295,7 @@ public class TsDeclarationsReader
                else
                {
                   TypeReference ref = (TypeReference)ctx.constraint().type().unionOrIntersectionOrPrimaryType().intersectionOrPrimaryType().primaryType().typeReference().accept(TYPE_READER);
-                  genericParam.simpleExtends = ref.typeName;
-                  genericParam.problems.addAll(ref.problems);
+                  genericParam.simpleExtends = ref;
                }
             }
          }

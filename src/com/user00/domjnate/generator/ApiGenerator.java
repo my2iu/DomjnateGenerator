@@ -197,7 +197,7 @@ public class ApiGenerator
             GenericContext generics = new GenericContext(intf.genericTypeParams);
             if (intf.genericTypeParams != null)
             {
-               generateGenericTypeParams(out, intf.genericTypeParams);
+               generateGenericTypeParams(out, intf.genericTypeParams, api, fullPkg, generics);
             }
             if (intf.extendsTypes != null)
             {
@@ -357,7 +357,7 @@ public class ApiGenerator
    {
       String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics));
       String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics).withTypeDescription(true));
-      String typeArgs = createMethodTypeArgs(out, callSigType);
+      String typeArgs = createMethodTypeArgs(out, callSigType, api, currentPackage, generics);
       out.println("@JsOverlay");
       out.print(String.format("public static %2$s%1$s call(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, typeArgs));
 
@@ -385,7 +385,7 @@ public class ApiGenerator
 
    }
 
-   private String createMethodTypeArgs(PrintWriter out, CallSignatureDefinition callSigType)
+   private String createMethodTypeArgs(PrintWriter out, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, GenericContext generics)
    {
       String typeArgs = "";
       if (callSigType.genericTypeParameters != null && callSigType.genericTypeParameters.size() > 0)
@@ -404,7 +404,7 @@ public class ApiGenerator
                continue;
             }
             if (generic.simpleExtends != null)
-               typeArgs += " extends " + generic.simpleExtends;
+               typeArgs += " extends " + typeString(generic.simpleExtends, new TypeStringGenerationContext(api, currentPackage, generics).withGenericParameter(true));
             generic.problems.dump(out);
          }
          typeArgs += "> ";
@@ -416,7 +416,7 @@ public class ApiGenerator
    {
       String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics));
       String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics).withTypeDescription(true));
-      String typeArgs = createMethodTypeArgs(out, callSigType);
+      String typeArgs = createMethodTypeArgs(out, callSigType, api, currentPackage, generics);
       out.println("@JsOverlay");
       out.print(String.format("public %2$s %3$s%1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, isStatic ? "static" : "default", typeArgs));
 
@@ -522,7 +522,7 @@ public class ApiGenerator
       }
    }
 
-   private void generateGenericTypeParams(PrintWriter out, List<GenericParameter> genericTypeParameters)
+   private void generateGenericTypeParams(PrintWriter out, List<GenericParameter> genericTypeParameters, ApiDefinition api, String currentPackage, GenericContext generics)
    {
       out.print("<");
       boolean isFirst = true;
@@ -537,7 +537,7 @@ public class ApiGenerator
          if (generic.simpleExtends != null)
          {
             out.print(" extends ");
-            out.print(generic.simpleExtends);
+            out.print(typeString(generic.simpleExtends, new TypeStringGenerationContext(api, currentPackage, generics).withGenericParameter(true)));
          }
       }         
       out.print("> ");
@@ -575,7 +575,7 @@ public class ApiGenerator
          out.println(String.format("@JsMethod(name=\"%1$s\")", methodName));
       if (callSigType.genericTypeParameters != null)
       {
-         generateGenericTypeParams(out, callSigType.genericTypeParameters);
+         generateGenericTypeParams(out, callSigType.genericTypeParameters, api, currentPackage, generics);
       }
       boolean isFirst = true;
       out.print(String.format("%1$s %2$s(", returnType, methodName(methodName)));
@@ -618,7 +618,7 @@ public class ApiGenerator
       out.print("public static ");
       if (callSigType.genericTypeParameters != null)
       {
-         generateGenericTypeParams(out, callSigType.genericTypeParameters);
+         generateGenericTypeParams(out, callSigType.genericTypeParameters, api, currentPackage, generics);
       }
       boolean isFirst = true;
       out.print(String.format("%1$s %2$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, methodName(methodName)));

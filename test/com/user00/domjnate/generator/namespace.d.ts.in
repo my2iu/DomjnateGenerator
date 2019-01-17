@@ -19,4 +19,5 @@ interface Test
 {
 	method(a:Intl.Test) : Intl.Test;
 	method(b:Test) : Intl.Test;
+	method2<J extends HTMLThing>() : J;
 }
