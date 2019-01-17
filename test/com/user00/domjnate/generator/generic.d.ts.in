@@ -17,3 +17,9 @@ declare var GenericIntf : {
 	make() : GenericIntf<string, Node>;
 	makeArr() : GenericIntf<string, Node>[];
 };
+
+declare namespace b
+{
+	interface Test2<T = any> {
+	}
+}

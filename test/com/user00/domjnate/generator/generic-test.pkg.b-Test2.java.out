@@ -1,0 +1,8 @@
+package test.pkg.b;
+
+import jsinterop.annotations.JsType;
+
+@JsType(isNative=true,name="Test2")
+public interface Test2<T> 
+{
+}

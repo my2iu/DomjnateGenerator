@@ -97,6 +97,11 @@ public class ApiGenerator
             imports.add("jsinterop.annotations.JsFunction");
             out.println("@JsFunction");
             out.print(String.format("public interface %1$s", name));
+            GenericContext generics = new GenericContext(intf.genericTypeParams);
+            if (intf.genericTypeParams != null)
+            {
+               generateGenericTypeParams(out, intf.genericTypeParams, api, fullPkg, generics);
+            }
             if (intf.extendsTypes != null)
             {
                out.println("Unhandled extends on a function interface");
@@ -106,7 +111,6 @@ public class ApiGenerator
             
             for (CallSignatureDefinition call: intf.callSignatures)
             {
-               GenericContext generics = new GenericContext(call.genericTypeParameters);
                if (call.genericTypeParameters != null)
                   out.println("Unhandled type parameters on function interface call signature");
                for (int n = 0; n <= call.optionalParams.size(); n++)

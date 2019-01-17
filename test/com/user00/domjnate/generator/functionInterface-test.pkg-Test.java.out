@@ -3,7 +3,7 @@ package test.pkg;
 import jsinterop.annotations.JsFunction;
 
 @JsFunction
-public interface Test
+public interface Test<T> 
 {
 double accept(String a);
 }

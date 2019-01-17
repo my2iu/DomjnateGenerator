@@ -1,4 +1,4 @@
-interface Test
+interface Test<T = any>
 {
 	(a:string) : number;
 }
