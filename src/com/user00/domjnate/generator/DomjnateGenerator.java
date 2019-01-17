@@ -9,9 +9,11 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.ErrorType;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
+import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.tsparser.TsDeclarationsReader;
 import com.user00.domjnate.generator.tsparser.TsIdlParser;
@@ -153,14 +155,28 @@ public class DomjnateGenerator
          api.interfaces.get("WebGLRenderingContextBase").methods.removeIf(
                method -> "getExtension".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
       }
-      
+
+      // SubtleCrypto exportKey() has many variants for hard-coded strings
+      if (api.interfaces.containsKey("SubtleCrypto"))
+      {
+         api.interfaces.get("SubtleCrypto").methods.removeIf(
+               method -> "exportKey".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
+      }
+
       // Remove variants with hardcoded strings from HTMLCanvasElement.getContext()
       if (api.interfaces.containsKey("HTMLCanvasElement"))
       {
          api.interfaces.get("HTMLCanvasElement").methods.removeIf(
                method -> "getContext".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
       }
-      
+
+      // Remove variants with hardcoded strings from DocumentEvent
+      if (api.interfaces.containsKey("DocumentEvent"))
+      {
+         api.interfaces.get("DocumentEvent").methods.removeIf(
+               method -> "createEvent".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
+      }
+
       // SVGSVGElement returns a list of a union type, but union types aren't supported in java
       if (api.interfaces.containsKey("SVGSVGElement"))
       {
@@ -224,6 +240,50 @@ public class DomjnateGenerator
       {
          api.interfaces.get("MediaList").methods.removeIf(
                method -> method.name.equals("toString"));
+      }
+      
+      // QueuingStrategy.highWaterMark is optional (and hence nullable) while it's not optional in its subclasses
+      // I will make it optional in the subclasses too so that it will be nullable everywhere.
+      if (api.interfaces.containsKey("ByteLengthQueuingStrategy"))
+      {
+         api.interfaces.get("ByteLengthQueuingStrategy").properties.forEach(
+               prop -> {
+                  if (prop.name.equals("highWaterMark"))
+                     prop.optional = true;
+               });
+      }
+      if (api.interfaces.containsKey("CountQueuingStrategy"))
+      {
+         api.interfaces.get("CountQueuingStrategy").properties.forEach(
+               prop -> {
+                  if (prop.name.equals("highWaterMark"))
+                     prop.optional = true;
+               });
+      }
+      
+      // JSON has two stringify methods that if all optional parameters are removed give two identical methods
+      if (api.interfaces.containsKey("JSON"))
+      {
+         // Create a new stringify() method with just the mandatory parameters
+         PropertyDefinition stringify = new PropertyDefinition();
+         stringify.name = "stringify";
+         stringify.callSigType = new CallSignatureDefinition();
+         PredefinedType returnType = new PredefinedType();
+         returnType.type = "string";
+         stringify.callSigType.returnType = returnType;
+         CallSignatureDefinition.CallParameter param = new CallSignatureDefinition.CallParameter();
+         param.name = "value";
+         PredefinedType anyType = new PredefinedType();
+         anyType.type = "any";
+         param.type = anyType;
+         stringify.callSigType.params.add(param);
+         api.interfaces.get("JSON").methods.add(stringify);
+         
+         // Remove the first optional parameter of the other methods since we already handle the case where they are optional with the new method
+         api.interfaces.get("JSON").methods.forEach(method -> {
+            if (method.name.equals("stringify") && method.callSigType.optionalParams.size() > 0)
+               method.callSigType.params.add(method.callSigType.optionalParams.remove(0));
+         });
       }
       
       // Remove artificial interfaces used to store constructors and static methods

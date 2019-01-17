@@ -75,6 +75,17 @@ public class ApiGenerator
       }
       return name;
    }
+   
+   String argName(String name)
+   {
+      switch(name)
+      {
+      case "for": return "_for";
+      case "this": return "_this";
+      default: break;
+      }
+      return name;
+   }
 
    String typeString(Type basicType, TypeStringGenerationContext ctx)
    {
@@ -450,7 +461,7 @@ public class ApiGenerator
             String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage, generics));
             out.print(paramType + " ");
          }
-         out.print(param.name);
+         out.print(argName(param.name));
       }
       for (int n = 0; n < numOptionals; n++)
       {
@@ -462,7 +473,7 @@ public class ApiGenerator
             String paramType = typeString(param.type, new TypeStringGenerationContext(api, currentPackage, generics));
             out.print(paramType + " ");
          }
-         out.print(param.name);
+         out.print(argName(param.name));
       }
       if (callSigType.restParameter != null)
       {
@@ -475,7 +486,7 @@ public class ApiGenerator
             out.print(paramType);
             out.print("... ");
          }
-         out.print(param.name);
+         out.print(argName(param.name));
       }
    }
 
