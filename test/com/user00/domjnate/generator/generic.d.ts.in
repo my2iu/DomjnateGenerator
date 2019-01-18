@@ -16,6 +16,7 @@ declare var GenericIntf : {
 	a : GenericIntf<number, Node>;
 	make() : GenericIntf<string, Node>;
 	makeArr() : GenericIntf<string, Node>[];
+	create<U>() : U;
 };
 
 declare namespace b

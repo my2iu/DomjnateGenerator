@@ -11,5 +11,5 @@ test.pkg.intl.Test method(test.pkg.intl.Test a);
 @JsMethod(name="method")
 test.pkg.intl.Test method(Test b);
 @JsMethod(name="method2")
-<J extends test.pkg.html.HTMLThing> J method2();
+<J extends test.pkg.html.HTMLThing> J method2(Class<J> _type);
 }

@@ -33,6 +33,10 @@ public static Array<GenericIntf<String, Node>> makeArr(com.user00.domjnate.api.W
   return com.user00.domjnate.util.Js.callStaticMethod(_win, "GenericIntf", "makeArr", Array.class);
 }
 @JsOverlay
+public static <U> U create(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, Class<U> _type) {
+  return com.user00.domjnate.util.Js.callStaticMethod(_win, "GenericIntf", "create", _type);
+}
+@JsOverlay
 public static <T,Z> GenericIntf<T, Z> call(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {
   return com.user00.domjnate.util.Js.callMethod(_win, "GenericIntf", GenericIntf.class);
 }

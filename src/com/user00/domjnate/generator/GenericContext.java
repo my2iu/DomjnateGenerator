@@ -27,6 +27,21 @@ public class GenericContext
 
    public GenericContext parent;
    public List<GenericParameter> params;
+   public String getGenericParamAsType(Type type)
+   {
+      if (!(type instanceof TypeReference)) return null;
+      TypeReference ref = (TypeReference)type;
+      if (params != null)
+      {
+         for (GenericParameter param: params)
+         {
+            if (ref.typeName.equals(param.name))
+               return ref.typeName;
+         }
+      }
+      if (parent == null) return null;
+      return parent.getGenericParamAsType(type);
+   }
    public boolean isGeneric(Type type)
    {
       if (!(type instanceof TypeReference)) return false;

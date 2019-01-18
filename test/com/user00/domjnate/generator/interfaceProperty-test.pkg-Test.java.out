@@ -24,4 +24,8 @@ void setD(Double val);
 Array<String> getArr();
 @JsProperty(name="arr")
 void setArr(Array<String> val);
+@JsProperty(name="k")
+Void getK();
+@JsProperty(name="k")
+void setK(Void val);
 }

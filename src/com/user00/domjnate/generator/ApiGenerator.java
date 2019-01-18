@@ -376,10 +376,10 @@ public class ApiGenerator
       out.println("@JsOverlay");
       out.print(String.format("public static %2$s%1$s call(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, typeArgs));
 
-      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, true);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, true, generics.getGenericParamAsType(callSigType.returnType));
       out.println(") {");
       out.print(String.format("  return com.user00.domjnate.util.Js.callMethod(_win, \"%2$s\", %1$s", returnTypeDescription, name));
-      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, false);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, false, null);
       out.println(");");
       out.println("}");
 
@@ -435,11 +435,11 @@ public class ApiGenerator
       out.println("@JsOverlay");
       out.print(String.format("public %2$s %3$s%1$s _new(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, isStatic ? "static" : "default", typeArgs));
 
-      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, true);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, true, generics.getGenericParamAsType(callSigType.returnType));
       out.println(") {");
       out.println(String.format("  java.lang.Object constructor = com.user00.domjnate.util.Js.getConstructor(_win, \"%1$s\");", returnType));
       out.print(String.format("  return com.user00.domjnate.util.Js.construct(_win, constructor, %1$s", returnTypeDescription));
-      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, false);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, false, null);
       out.println(");");
       out.println("}");
 
@@ -450,8 +450,17 @@ public class ApiGenerator
 
    private void generateMethodParameters(PrintWriter out, CallSignatureDefinition callSigType, 
          ApiDefinition api, String currentPackage, GenericContext generics, 
-         int numOptionals, boolean isFirst, boolean withTypes)
+         int numOptionals, boolean isFirst, boolean withTypes, String genericParamAsType)
    {
+      if (genericParamAsType != null && withTypes)
+      {
+         if (!isFirst)
+            out.print(", ");
+         isFirst = false;
+         if (withTypes)
+            out.print("Class<" + genericParamAsType + "> ");
+         out.print("_type");
+      }
       for (CallParameter param: callSigType.params)
       {
          if (!isFirst) out.print(", ");
@@ -554,7 +563,7 @@ public class ApiGenerator
             out.print(" extends ");
             out.print(typeString(generic.simpleExtends, new TypeStringGenerationContext(api, currentPackage, generics).withGenericParameter(true)));
          }
-      }         
+      }
       out.print("> ");
 
    }
@@ -579,8 +588,9 @@ public class ApiGenerator
       }
    }
    
-   private void generateMethodWithOptionals(PrintWriter out, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, InterfaceDefinition sourceIntf, String currentPackage, GenericContext generics, ProblemTracker methodProblems, int numOptionals, boolean withJsMethodAnnotation)
+   private void generateMethodWithOptionals(PrintWriter out, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, InterfaceDefinition sourceIntf, String currentPackage, GenericContext genericsParent, ProblemTracker methodProblems, int numOptionals, boolean withJsMethodAnnotation)
    {
+      GenericContext generics = new GenericContext(callSigType.genericTypeParameters, genericsParent);
       String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics));
       if (returnType.equals("this") && sourceIntf != null)
          // TODO: Add generic type arguments
@@ -594,7 +604,7 @@ public class ApiGenerator
       }
       boolean isFirst = true;
       out.print(String.format("%1$s %2$s(", returnType, methodName(methodName)));
-      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, isFirst, true);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, isFirst, true, generics.getGenericParamAsType(callSigType.returnType));
       out.println(");");
       if (methodProblems != null)
          methodProblems.dump(out);
@@ -624,8 +634,9 @@ public class ApiGenerator
    }
    
 
-   private void generateStaticMethodWithOptionals(PrintWriter out, String className, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, GenericContext generics, ProblemTracker methodProblems, int numOptionals)
+   private void generateStaticMethodWithOptionals(PrintWriter out, String className, String methodName, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, GenericContext genericsParent, ProblemTracker methodProblems, int numOptionals)
    {
+      GenericContext generics = new GenericContext(callSigType.genericTypeParameters, genericsParent);
       String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics));
       String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics).withTypeDescription(true));
 
@@ -638,13 +649,15 @@ public class ApiGenerator
       boolean isFirst = true;
       out.print(String.format("%1$s %2$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win", returnType, methodName(methodName)));
       isFirst = false;
-      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, isFirst, true);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, isFirst, true, generics.getGenericParamAsType(callSigType.returnType));
       out.println(") {");
       out.print("  ");
       if (!returnType.equals("void"))
          out.print("return ");
+      if (generics.getGenericParamAsType(callSigType.returnType) != null)
+         returnTypeDescription = "_type";
       out.print(String.format("com.user00.domjnate.util.Js.callStaticMethod(_win, \"%1$s\", \"%2$s\", %3$s", className, methodName, returnTypeDescription));
-      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, false);
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, false, false, generics.getGenericParamAsType(callSigType.returnType));
       out.println(");");
       out.println("}");
       if (methodProblems != null)

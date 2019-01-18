@@ -33,6 +33,7 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
       case "string": type = "String"; break;
       case "boolean": type = (ctx.nullable || ctx.genericParameter) ? "Boolean" : "boolean"; break;
       case "void": type = (ctx.nullable || ctx.genericParameter) ? "Void" : "void"; break;
+      case "symbol": type = "com.user00.domjnate.api.Symbol"; break;
       default: type = "unknown"; break;
       }
       if (ctx.typeDescription)
@@ -74,6 +75,20 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
             return "boolean.class";
          else
             return "boolean";
+      }
+      if (type.typeName.equals("undefined"))
+      {
+         if (ctx.typeDescription)
+            return "Void.class";
+         else
+            return "Void";
+      }
+      if (type.typeName.equals("object"))
+      {
+         if (ctx.typeDescription)
+            return "java.lang.Object.class";
+         else
+            return "java.lang.Object";
       }
       // See if we need to use a full package name here
       if (type.typeName.contains("."))
