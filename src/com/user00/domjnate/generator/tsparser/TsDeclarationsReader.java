@@ -35,12 +35,12 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientLetDeclarationC
 import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientNamespaceDeclarationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientNamespaceElementContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.AmbientVarDeclarationContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.BooleanTypeGuardContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.CallSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ClassOrInterfaceTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ConstructSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.DeclarationElementContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.FunctionTypeContext;
-import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureMappedContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureNumberContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.IndexSignatureStringContext;
@@ -63,6 +63,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeAnnotationContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentListContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeArgumentsContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeMemberContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.TypeParameterListContext;
@@ -186,7 +187,10 @@ public class TsDeclarationsReader
       
       @Override public Type visitFunctionType(FunctionTypeContext ctx) 
       {
+         CallSignatureReader callReader = new CallSignatureReader();
+         ctx.accept(callReader);
          FunctionType fnType = new FunctionType();
+         fnType.callSigType = callReader.sig;
          return fnType;
       }
       
@@ -349,6 +353,25 @@ public class TsDeclarationsReader
          
          return null;
       }
+      
+      @Override
+      public Void visitFunctionType(FunctionTypeContext ctx)
+      {
+         if (ctx.typeParameters() != null)
+         {
+            sig.genericTypeParameters = ctx.typeParameters().accept(TYPE_PARAMETERS_READER);
+         }
+         
+         // Return type
+         parseReturnType(ctx.type(), ctx.booleanTypeGuard());
+         
+         if (ctx.parameterList() != null)
+         {
+            ctx.parameterList().accept(this);
+         }
+         
+         return null;
+      }
 
       @Override
       public Void visitConstructSignature(ConstructSignatureContext ctx)
@@ -374,14 +397,19 @@ public class TsDeclarationsReader
 
       void readReturnTypeAnnotation(TypeAnnotationContext ctx)
       {
-         if (ctx.type() != null)
-            sig.returnType = parseType(ctx.type());
-         else if (ctx.booleanTypeGuard() != null)
+         parseReturnType(ctx.type(), ctx.booleanTypeGuard());
+      }
+      
+      void parseReturnType(TypeContext type, BooleanTypeGuardContext booleanTypeGuard)
+      {
+         if (type != null)
+            sig.returnType = parseType(type);
+         else if (booleanTypeGuard != null)
          {
             // Ignore the type guard properties and just treat the type like a boolean
-            PredefinedType type = new PredefinedType();
-            type.type = "boolean";
-            sig.returnType = type;
+            PredefinedType returnType = new PredefinedType();
+            returnType.type = "boolean";
+            sig.returnType = returnType;
          }
       }
 
@@ -424,7 +452,10 @@ public class TsDeclarationsReader
          if (ctx.bindingIdentifierOrPattern() != null)
          {
             if (ctx.bindingIdentifierOrPattern().bindingPattern() != null)
-               sig.problems.add("binding pattern used for call signature parameter");
+            {
+               // bindingPattern for call arguments don't seem to really make sense (I assume it's normally used for return types)
+               name = "_val";
+            }
             else
                name = ctx.bindingIdentifierOrPattern().bindingIdentifier().getText();
          }
@@ -576,9 +607,6 @@ public class TsDeclarationsReader
             return null;
          }
          String name = ctx.propertyName().identifierName().getText();
-         
-         if (ctx.optional() != null)
-            intf.problems.add("Unhandled method with optional " + name);
          
          CallSignatureReader call = new CallSignatureReader();
          ctx.callSignature().accept(call);

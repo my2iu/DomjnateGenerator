@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.CharStreams;
 import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.ErrorType;
+import com.user00.domjnate.generator.ast.FunctionType;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
@@ -296,9 +297,50 @@ public class DomjnateGenerator
                   if (prop.name.equals("type"))
                      prop.type = stringType;
                });
-         
       }
       
+      // PropertyDescriptor has optional methods which will be recoded as function types instead
+      if (api.interfaces.containsKey("PropertyDescriptor"))
+      {
+         PredefinedType stringType = new PredefinedType();
+         stringType.type = "string";
+         api.interfaces.get("PropertyDescriptor").methods.forEach(
+               method -> {
+                  if (method.name.equals("get") || method.name.equals("set"))
+                  {
+                     FunctionType fnType = new FunctionType();
+                     fnType.callSigType = method.callSigType;
+                     fnType.callSigType.problems.problems.clear();
+                     PropertyDefinition prop = new PropertyDefinition();
+                     prop.name = method.name;
+                     prop.type = fnType; 
+                     api.interfaces.get("PropertyDescriptor").properties.add(prop);
+                  }
+               });
+         api.interfaces.get("PropertyDescriptor").methods.removeIf(
+               method -> method.name.equals("get") || method.name.equals("set")); 
+      }
+
+      // ReadableStream has a method that uses a bindingPattern, which we replace with a proper
+      // variable name
+      if (api.interfaces.containsKey("ReadableStream"))
+      {
+         api.interfaces.get("ReadableStream").methods.forEach(method -> {
+            if (method.name.equals("pipeThrough") && method.callSigType.params.get(0).name.equals("_val"))
+               method.callSigType.params.get(0).name = "transformStream";
+         });
+      }
+
+      // Promise has arrays of different generics, which can't really be typed properly. So we can remove those extra versions
+      if (api.interfaces.containsKey("PromiseConstructor"))
+      {
+         api.interfaces.get("PromiseConstructor").methods.removeIf(method ->
+            method.name.equals("all") && method.callSigType.genericTypeParameters.size() > 1);
+         api.interfaces.get("PromiseConstructor").methods.removeIf(method ->
+            method.name.equals("race") && method.callSigType.genericTypeParameters.size() > 1);
+         
+      }
+
       // Remove artificial interfaces used to store constructors and static methods
       for (String intfName: Arrays.asList(
             "URIErrorConstructor",

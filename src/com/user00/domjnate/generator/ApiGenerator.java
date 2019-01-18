@@ -582,6 +582,9 @@ public class ApiGenerator
             }
          }
       }
+      if (method.optional)
+         out.println("Unhandled method with optional " + method.name);
+
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
          generateMethodWithOptionals(out, method.name, method.callSigType, api, sourceIntf, currentPackage, generics, method.problems, n, true);
@@ -627,6 +630,8 @@ public class ApiGenerator
             }
          }
       }
+      if (method.optional)
+         out.println("Unhandled static method with optional " + method.name);
       for (int n = 0; n <= method.callSigType.optionalParams.size(); n++)
       {
          generateStaticMethodWithOptionals(out, className, method.name, method.callSigType, api, currentPackage, generics, method.problems, n);
