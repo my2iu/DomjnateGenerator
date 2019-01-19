@@ -10,6 +10,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -180,9 +181,16 @@ public class ApiGenerator
             {
                if (call.genericTypeParameters != null)
                   out.println("Unhandled type parameters on function interface call signature");
-               iterateOverCallVariants(call, api, fullPkg, generics, (numOptional, variants) -> {
-                  generateMethodWithOptionals(out, "accept", call, api, null, fullPkg, generics, null, numOptional, variants, false);
-               });
+               int numArguments = call.params.size();
+               numArguments += call.optionalParams.size();
+               if (call.restParameter != null)
+                  numArguments += 1;
+               int [] variants = new int[numArguments];
+               Arrays.fill(variants, -1);
+               int numOptional = call.optionalParams.size();
+               // TODO: Use @JsOptional on optional parameters
+               // TODO: better handling of unions (don't just fallback to java.lang.Object)
+               generateMethodWithOptionals(out, "accept", call, api, null, fullPkg, generics, null, numOptional, variants, false);
             }
             
             out.println("}");
