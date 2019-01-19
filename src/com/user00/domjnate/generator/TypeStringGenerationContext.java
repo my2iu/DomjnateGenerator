@@ -18,6 +18,7 @@ public class TypeStringGenerationContext
    public boolean genericParameter;
    public boolean stripArray;
    public int variant = -1;
+   public boolean literalAsType = true;
    TypeStringGenerationContext copy()
    {
       TypeStringGenerationContext ctx = new TypeStringGenerationContext(namespaceScope, currentPackage, generics);

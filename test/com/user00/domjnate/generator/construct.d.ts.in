@@ -17,6 +17,7 @@ declare var Test2 : {
 	prototype : Node;
 	method(a : string) : void;
 	method2() : number;
+	method3(a : "big"|"small"|"other") : "good"|"bad"|"ugly";
 };
 
 interface Math

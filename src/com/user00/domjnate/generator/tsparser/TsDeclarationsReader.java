@@ -23,6 +23,7 @@ import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.ObjectType;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
+import com.user00.domjnate.generator.ast.StringLiteralType;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.TypeQueryType;
 import com.user00.domjnate.generator.ast.TypeReference;
@@ -207,15 +208,14 @@ public class TsDeclarationsReader
             else
                return new ErrorType("Unhandled indexable type");
          }
+         else if (ctx.StringLiteral() != null)
+         {
+            StringLiteralType type = new StringLiteralType();
+            type.stringLiteral = ctx.StringLiteral().getText();
+            return type;
+         }
          return super.visitPrimaryType(ctx);
       }
-      
-//      @Override public Type visitPrimaryTypeIndexableArray(PrimaryTypeIndexableArrayContext ctx) 
-//      {
-//         ArrayType arrType = new ArrayType();
-//         arrType.type = ctx.
-//         return arrType;
-//      }
    };
    
    static Type parseType(RuleContext ctx)

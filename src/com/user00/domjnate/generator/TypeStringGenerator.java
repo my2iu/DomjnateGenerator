@@ -7,6 +7,7 @@ import com.user00.domjnate.generator.ast.ArrayType;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PredefinedType;
+import com.user00.domjnate.generator.ast.StringLiteralType;
 import com.user00.domjnate.generator.ast.Type;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.ast.UnionType;
@@ -96,14 +97,14 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
          // We're referring to a type in another namespace, so show the
          // package name with the type name to be safe
          String[] parts = type.typeName.split("[.]");
-         ApiDefinition api = this.apiGenerator.topLevel;
+         ApiDefinition api = apiGenerator.topLevel;
          for (String p: Arrays.copyOf(parts, parts.length - 1))
             api = api.namespaces.get(p);
          InterfaceDefinition referredIntf = api.interfaces.get(parts[parts.length - 1]);
          if (ctx.typeDescription)
-            return this.apiGenerator.getFullPackageForInterface(api, referredIntf) + "." + referredIntf.name + ".class";
+            return apiGenerator.getFullPackageForInterface(api, referredIntf) + "." + referredIntf.name + ".class";
          else
-            return this.apiGenerator.getFullPackageForInterface(api, referredIntf) + "." + referredIntf.name + typeArgs;
+            return apiGenerator.getFullPackageForInterface(api, referredIntf) + "." + referredIntf.name + typeArgs;
       }
       if (ctx.namespaceScope.interfaces.containsKey(type.typeName))
       {
@@ -111,13 +112,25 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
          // type in the same namespace. We'll return the full type with
          // package name to be safe.
          // TODO: I'm ignoring this for now
-         String otherPkg = this.apiGenerator.getFullPackageForInterface(ctx.namespaceScope, ctx.namespaceScope.interfaces.get(type.typeName));
+         String otherPkg = apiGenerator.getFullPackageForInterface(ctx.namespaceScope, ctx.namespaceScope.interfaces.get(type.typeName));
          if (!otherPkg.equals(ctx.currentPackage))
          {
             if (ctx.typeDescription)
                return otherPkg + "." + ctx.namespaceScope.interfaces.get(type.typeName).name + ".class";
             else
                return otherPkg + "." + ctx.namespaceScope.interfaces.get(type.typeName).name + typeArgs; 
+         }
+      }
+      if (apiGenerator.topLevel.interfaces.containsKey(type.typeName))
+      {
+         ApiDefinition api = apiGenerator.topLevel;
+         String otherPkg = apiGenerator.getFullPackageForInterface(apiGenerator.topLevel, apiGenerator.topLevel.interfaces.get(type.typeName));
+         if (!otherPkg.equals(ctx.currentPackage))
+         {
+            if (ctx.typeDescription)
+               return otherPkg + "." + apiGenerator.topLevel.interfaces.get(type.typeName).name + ".class";
+            else
+               return otherPkg + "." + apiGenerator.topLevel.interfaces.get(type.typeName).name + typeArgs; 
          }
       }
       if (ctx.typeDescription)
@@ -132,6 +145,14 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
       return typeString(type.subtype, ctx.withNullable(true));
    }
 
+   @Override
+   public String visitStringLiteralType(StringLiteralType type)
+   {
+      if (ctx.literalAsType)
+         return "String";
+      return "java.lang.Object";
+   }
+   
    @Override
    public String visitArrayType(ArrayType type)
    {
@@ -151,6 +172,13 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
    @Override
    public String visitUnionType(UnionType type)
    {
+      if (type.isStringLiteralUnion() && ctx.literalAsType)
+      {
+         if (ctx.typeDescription)
+            return "String.class";
+         else
+            return "String";
+      }
       if (ctx.variant < 0)
          return super.visitUnionType(type);
       int variantCount = 0;
@@ -207,6 +235,9 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
          
          @Override public Integer visitUnionType(UnionType type)
          {
+            if (type.isStringLiteralUnion() && ctx.literalAsType)
+               return 1;
+            
             int count = 0;
             for (Type t: type.subtypes)
             {

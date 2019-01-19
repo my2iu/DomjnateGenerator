@@ -6,6 +6,16 @@ public class UnionType extends Type
 {
    public List<Type> subtypes;
 
+   public boolean isStringLiteralUnion()
+   {
+      for (Type t: subtypes)
+      {
+         if (!(t instanceof StringLiteralType))
+            return false;
+      }
+      return true;
+   }
+   
    @Override
    public <U> U visit(TypeVisitor<U> visitor)
    {

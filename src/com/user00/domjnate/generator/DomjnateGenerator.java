@@ -15,6 +15,7 @@ import com.user00.domjnate.generator.ast.FunctionType;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
+import com.user00.domjnate.generator.ast.StringLiteralType;
 import com.user00.domjnate.generator.ast.TypeReference;
 import com.user00.domjnate.generator.tsparser.TsDeclarationsReader;
 import com.user00.domjnate.generator.tsparser.TsIdlParser;
@@ -63,7 +64,7 @@ public class DomjnateGenerator
       if (api.interfaces.containsKey("Element"))
       {
          api.interfaces.get("Element").methods.removeIf(
-               method -> "getElementsByTagNameNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
+               method -> "getElementsByTagNameNS".equals(method.name) && method.callSigType.params.get(0).type instanceof StringLiteralType);
       }
 
       if (api.interfaces.containsKey("Array"))
@@ -104,9 +105,9 @@ public class DomjnateGenerator
       {
          // Remove some extra createEvent() and createElementNS() methods on Document
          api.interfaces.get("Document").methods.removeIf(
-               method -> "createElementNS".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
+               method -> "createElementNS".equals(method.name) && method.callSigType.params.get(0).type instanceof StringLiteralType);
          api.interfaces.get("Document").methods.removeIf(
-               method -> "createEvent".equals(method.name) && method.callSigType.params.get(0).type instanceof ErrorType);
+               method -> "createEvent".equals(method.name) && method.callSigType.params.get(0).type instanceof StringLiteralType);
          // Remove some other overlapping methods
          api.interfaces.get("Document").methods.removeIf(   // 2 versions with almost identical parameters
                method -> "createElementNS".equals(method.name) && method.callSigType.params.size() == 2 
@@ -116,7 +117,7 @@ public class DomjnateGenerator
                      && method.callSigType.optionalParams.size() == 1);   // deprecated
          api.interfaces.get("Document").methods.removeIf(
                method -> "getElementsByTagNameNS".equals(method.name) 
-                     && method.callSigType.params.get(0).type instanceof ErrorType);   // getElementsByTagNameNS with constant string for namespace
+                     && method.callSigType.params.get(0).type instanceof StringLiteralType);   // getElementsByTagNameNS with constant string for namespace
          api.interfaces.get("Document").properties.forEach(
                prop -> {
                   if (!prop.name.equals("links")) return;
@@ -157,11 +158,15 @@ public class DomjnateGenerator
                method -> "getExtension".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
       }
 
-      // SubtleCrypto exportKey() has many variants for hard-coded strings
       if (api.interfaces.containsKey("SubtleCrypto"))
       {
+         // SubtleCrypto exportKey() has many variants for hard-coded strings
          api.interfaces.get("SubtleCrypto").methods.removeIf(
                method -> "exportKey".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
+         
+         // Also has unnecessary variants for different parameters
+         api.interfaces.get("SubtleCrypto").methods.removeIf(
+               method -> "importKey".equals(method.name) && !(method.callSigType.params.get(0).type instanceof PredefinedType));
       }
 
       // Remove variants with hardcoded strings from HTMLCanvasElement.getContext()
@@ -284,6 +289,26 @@ public class DomjnateGenerator
          api.interfaces.get("JSON").methods.forEach(method -> {
             if (method.name.equals("stringify") && method.callSigType.optionalParams.size() > 0)
                method.callSigType.params.add(method.callSigType.optionalParams.remove(0));
+         });
+      }
+      
+      // RegExp has two call signatures that result in duplicate methods when the optional parameters in one call signature is removed
+      if (api.interfaces.containsKey("RegExpConstructor"))
+      {
+         // Remove the optional parameter
+         api.interfaces.get("RegExpConstructor").callSignatures.forEach(callSigType -> {
+            if (callSigType.optionalParams.size() == 1)
+            {
+               callSigType.params.add(callSigType.optionalParams.get(0));
+               callSigType.optionalParams.clear();
+            }
+         });
+         api.interfaces.get("RegExpConstructor").constructSignatures.forEach(callSigType -> {
+            if (callSigType.optionalParams.size() == 1)
+            {
+               callSigType.params.add(callSigType.optionalParams.get(0));
+               callSigType.optionalParams.clear();
+            }
          });
       }
       
