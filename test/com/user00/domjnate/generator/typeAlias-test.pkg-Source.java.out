@@ -8,5 +8,7 @@ public interface Source
 {
 // TODO: Suppressing property with type query type Test
 @JsMethod(name="addListener")
-void addListener(java.lang.Object a);
+void addListener(TestObject a);
+@JsMethod(name="addListener")
+void addListener(Test a);
 }

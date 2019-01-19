@@ -17,6 +17,7 @@ public class TypeStringGenerationContext
    public boolean typeDescription;
    public boolean genericParameter;
    public boolean stripArray;
+   public int variant = -1;
    TypeStringGenerationContext copy()
    {
       TypeStringGenerationContext ctx = new TypeStringGenerationContext(namespaceScope, currentPackage, generics);
@@ -24,6 +25,7 @@ public class TypeStringGenerationContext
       ctx.typeDescription = typeDescription;
       ctx.genericParameter = genericParameter;
       ctx.stripArray = stripArray;
+      ctx.variant = variant;
       return ctx;
    }
    TypeStringGenerationContext withNullable(boolean withNullable)
@@ -48,6 +50,12 @@ public class TypeStringGenerationContext
    {
       TypeStringGenerationContext ctx = copy();
       ctx.stripArray = withStripArray;
+      return ctx;
+   }
+   TypeStringGenerationContext withVariant(int withVariant)
+   {
+      TypeStringGenerationContext ctx = copy();
+      ctx.variant = withVariant;
       return ctx;
    }
 }

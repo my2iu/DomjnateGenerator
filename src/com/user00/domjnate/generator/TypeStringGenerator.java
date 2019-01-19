@@ -151,7 +151,17 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
    @Override
    public String visitUnionType(UnionType type)
    {
-      return super.visitUnionType(type);
+      if (ctx.variant < 0)
+         return super.visitUnionType(type);
+      int variantCount = 0;
+      for (Type t: type.subtypes)
+      {
+         int thisVariants = typeVariantCount(t, apiGenerator, ctx); 
+         if (ctx.variant < variantCount + thisVariants)
+            return typeString(t, ctx.withVariant(ctx.variant - variantCount));
+         variantCount += thisVariants;
+      }
+      throw new IllegalArgumentException("Requesting variant beyond end of union");
    }
 
    @Override
@@ -178,5 +188,47 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
             return "java.lang.Object";
       }
       return basicType.visit(new TypeStringGenerator(apiGenerator, ctx));
+   }
+   
+   static int typeVariantCount(Type type, ApiGenerator apiGenerator, TypeStringGenerationContext ctx)
+   {
+      if (type == null)
+         return 1;
+      return type.visit(new Type.TypeVisitor<Integer>() {
+         @Override public Integer visitType(Type type)
+         {
+            return 1;
+         }
+
+         @Override public Integer visitNullableType(NullableType type)
+         {
+            return type.subtype.visit(this);
+         }
+         
+         @Override public Integer visitUnionType(UnionType type)
+         {
+            int count = 0;
+            for (Type t: type.subtypes)
+            {
+               count += t.visit(this);
+            }
+            return count;
+         }
+         
+         @Override public Integer visitTypeReferenceType(TypeReference type)
+         {
+            // TODO: Should type aliases recurse?
+            if (ctx.namespaceScope.typeAliases.containsKey(type.typeName))
+            {
+               return ctx.namespaceScope.typeAliases.get(type.typeName).visit(this);
+            }
+            if (apiGenerator.topLevel.typeAliases.containsKey(type.typeName))
+            {
+               return apiGenerator.topLevel.typeAliases.get(type.typeName).visit(this);
+            }
+            return 1;
+         }
+
+      });
    }
 }

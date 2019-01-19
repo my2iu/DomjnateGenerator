@@ -5,4 +5,5 @@ interface Test
 	method3() : this;
 	optionalParams(a: string, b?: string, c?:string) : void;
 	methodCallback(a : (b: string) => number) : void;
+	methodUnion(a : B|C, b:string|number|null) : K|D;
 }
