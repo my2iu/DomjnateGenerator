@@ -121,7 +121,7 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
                return otherPkg + "." + ctx.namespaceScope.interfaces.get(type.typeName).name + typeArgs; 
          }
       }
-      if (apiGenerator.topLevel.interfaces.containsKey(type.typeName))
+      else if (apiGenerator.topLevel.interfaces.containsKey(type.typeName))
       {
          ApiDefinition api = apiGenerator.topLevel;
          String otherPkg = apiGenerator.getFullPackageForInterface(apiGenerator.topLevel, apiGenerator.topLevel.interfaces.get(type.typeName));

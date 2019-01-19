@@ -363,7 +363,20 @@ public class DomjnateGenerator
             method.name.equals("all") && method.callSigType.genericTypeParameters.size() > 1);
          api.interfaces.get("PromiseConstructor").methods.removeIf(method ->
             method.name.equals("race") && method.callSigType.genericTypeParameters.size() > 1);
-         
+      }
+      
+      // Adjust inheritance hierarchy of typed arrays
+      for (String typedArray: Arrays.asList("Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array", "Float32Array", "Float64Array", "DataView"))
+      {
+         TypeReference arrayBufferView = new TypeReference();
+         arrayBufferView.typeName = "ArrayBufferView";
+         if (api.interfaces.containsKey(typedArray))
+         {
+            if (api.interfaces.get(typedArray).extendsTypes == null)
+               api.interfaces.get(typedArray).extendsTypes = new ArrayList<>();
+            if (api.interfaces.get(typedArray).extendsTypes.size() == 0)
+               api.interfaces.get(typedArray).extendsTypes.add(arrayBufferView);
+         }
       }
 
       // Remove artificial interfaces used to store constructors and static methods
