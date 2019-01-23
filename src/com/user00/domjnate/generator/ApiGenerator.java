@@ -55,8 +55,18 @@ public class ApiGenerator
       }
    }
    
-   String getterName(String propName)
+   String getterName(String propName, boolean isReadOnly)
    {
+      if (isReadOnly)
+      {
+         // Check if property is all upper case (and contains at least one upper-case)
+         boolean allNotLowerCase = propName.codePoints().allMatch(code -> !Character.isLowerCase(code));
+         boolean someUpperCase = propName.codePoints().anyMatch(code -> Character.isUpperCase(code));
+         if (someUpperCase && allNotLowerCase)
+         {
+            return propName;
+         }
+      }
       return "get" + propName.substring(0, 1).toUpperCase() + propName.substring(1);
    }
 
@@ -580,7 +590,7 @@ public class ApiGenerator
       {
          imports.add("jsinterop.annotations.JsProperty");
          out.println(String.format("@JsProperty(name=\"%1$s\")", prop.name));
-         out.println(String.format("%2$s %1$s();", getterName(prop.name), type));
+         out.println(String.format("%2$s %1$s();", getterName(prop.name, prop.readOnly), type));
          
          if (!prop.readOnly)
          {
@@ -592,7 +602,7 @@ public class ApiGenerator
       {
          imports.add("jsinterop.annotations.JsOverlay");
          out.println("@JsOverlay");
-         out.println(String.format("public static %2$s %1$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", getterName(prop.name), type));
+         out.println(String.format("public static %2$s %1$s(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {", getterName(prop.name, prop.readOnly), type));
          out.println(String.format("  java.lang.Object obj = com.user00.domjnate.util.Js.getMember(_win, \"%1$s\", com.user00.domjnate.util.EmptyInterface.class);", className));
          out.println(String.format("  return com.user00.domjnate.util.Js.getMember(obj, \"%1$s\", %2$s);", prop.name, typeDescription));
          out.println("}");
