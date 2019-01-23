@@ -678,7 +678,7 @@ public class ApiGenerator
       }
       boolean isFirst = true;
       out.print(String.format("%1$s %2$s(", returnType, methodName(methodName)));
-      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, variants, isFirst, true, generics.getGenericParamAsType(callSigType.returnType));
+      generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, variants, isFirst, true, null); // generics.getGenericParamAsType(callSigType.returnType));
       out.println(");");
       if (methodProblems != null)
          methodProblems.dump(out);
