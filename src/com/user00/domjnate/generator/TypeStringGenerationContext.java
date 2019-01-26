@@ -13,12 +13,13 @@ public class TypeStringGenerationContext
    public ApiDefinition namespaceScope;
    public GenericContext generics;
    public String currentPackage;
-   public boolean nullable;
-   public boolean typeDescription;
-   public boolean genericParameter;
-   public boolean stripArray;
+   public boolean nullable;          // nullable version of types (i.e. primitives are autoboxed so that null will be accepted as a paramter)
+   public boolean typeDescription;   // output objects (i.e. Class<T>) describing the type
+   public boolean genericParameter;  // type that can be used as a generic parameter (i.e. primitives are autoboxed)
+   public boolean stripArray;        // remove the top-most array type so we get the type of the contents of the array
+   public boolean rawJavaScriptName; // output the raw name of the JS type (i.e. remove any generic parameters)
    public int variant = -1;
-   public boolean literalAsType = true;
+   public boolean literalAsType = true;  // if the type is a literal string constant or numeric constant, treat that as the type of that constant
    TypeStringGenerationContext copy()
    {
       TypeStringGenerationContext ctx = new TypeStringGenerationContext(namespaceScope, currentPackage, generics);
@@ -26,6 +27,7 @@ public class TypeStringGenerationContext
       ctx.typeDescription = typeDescription;
       ctx.genericParameter = genericParameter;
       ctx.stripArray = stripArray;
+      ctx.rawJavaScriptName = rawJavaScriptName;
       ctx.variant = variant;
       return ctx;
    }
@@ -51,6 +53,12 @@ public class TypeStringGenerationContext
    {
       TypeStringGenerationContext ctx = copy();
       ctx.stripArray = withStripArray;
+      return ctx;
+   }
+   TypeStringGenerationContext withRawJavaScriptName(boolean withJsName)
+   {
+      TypeStringGenerationContext ctx = copy();
+      ctx.rawJavaScriptName = withJsName;
       return ctx;
    }
    TypeStringGenerationContext withVariant(int withVariant)

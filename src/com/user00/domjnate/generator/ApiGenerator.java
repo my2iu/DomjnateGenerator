@@ -498,6 +498,7 @@ public class ApiGenerator
    private void generateConstructWithOptionals(PrintWriter out, CallSignatureDefinition callSigType, ApiDefinition api, String currentPackage, GenericContext generics, int numOptionals, int[] variants, boolean isStatic)
    {
       String returnType = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics));
+      String jsClassName = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics).withRawJavaScriptName(true));
       String returnTypeDescription = typeString(callSigType.returnType, new TypeStringGenerationContext(api, currentPackage, generics).withTypeDescription(true));
       String typeArgs = createMethodTypeArgs(out, callSigType, api, currentPackage, generics);
       out.println("@JsOverlay");
@@ -505,7 +506,7 @@ public class ApiGenerator
 
       generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, variants, false, true, generics.getGenericParamAsType(callSigType.returnType));
       out.println(") {");
-      out.println(String.format("  java.lang.Object constructor = com.user00.domjnate.util.Js.getConstructor(_win, \"%1$s\");", returnType));
+      out.println(String.format("  java.lang.Object constructor = com.user00.domjnate.util.Js.getConstructor(_win, \"%1$s\");", jsClassName));
       out.print(String.format("  return com.user00.domjnate.util.Js.construct(_win, constructor, %1$s", returnTypeDescription));
       generateMethodParameters(out, callSigType, api, currentPackage, generics, numOptionals, variants, false, false, null);
       out.println(");");

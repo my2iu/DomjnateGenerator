@@ -56,7 +56,7 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
          return this.typeString(this.apiGenerator.topLevel.typeAliases.get(type.typeName), ctx);
       }
       String typeArgs = "";
-      if (type.typeArgs != null)
+      if (type.typeArgs != null && !ctx.rawJavaScriptName)
       {
          String ref = "";
          ref += "<";
@@ -165,6 +165,8 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
       }
       if (ctx.typeDescription)
          return pkgPrefix + "Array.class";
+      else if (ctx.rawJavaScriptName)
+         return pkgPrefix + "Array";
       else
          return pkgPrefix + "Array<" + typeString(type.type, ctx.withGenericParameter(true))+ ">";
    }
