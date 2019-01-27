@@ -56,4 +56,9 @@
 		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es2015.symbol.wellknown.d.ts" dest="idl/lib.es2015.symbol.wellknown.d.ts"/>
 		<get src="https://raw.githubusercontent.com/Microsoft/TypeScript/master/lib/lib.es5.d.ts" dest="idl/lib.es5.d.ts"/>
 	</target>
+	
+	<!-- Eventually, I'll supplement the type information from Typescript with the numeric type information from the WebIDL --> 
+	<target name="Download Supplementary WebIDL">
+		<get src="https://hg.mozilla.org/mozilla-central/archive/tip.zip/dom/webidl/" dest="idl/mozwebidl.zip"/>
+	</target>
 </project>
