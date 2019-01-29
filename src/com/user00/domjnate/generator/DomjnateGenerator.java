@@ -48,6 +48,12 @@ public class DomjnateGenerator
       // Apply changes
       fixupApi(api);
       
+      // Figure out what the static part of interfaces should be
+      new FindStaticInterfaces(api).go(api);
+      
+      // Move lambdas to be proper function interfaces
+      new ExtractFunctionInterfaces().convertFunctions(api);
+      
       // Generate JsInterop API based on type data that we've read
       generator.topLevel = api;
       generator.generate(null, api);

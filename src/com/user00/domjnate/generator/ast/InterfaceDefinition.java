@@ -23,6 +23,9 @@ public class InterfaceDefinition
 
    public String remapPackage = null;  // Changes the package where Java interface will be put
    public boolean doNotGenerateJava = false;  // Do not generate a Java interface for this interface
+   
+   // Extra interface information derived by transforming the TypeScript idl to make it more appropriate for Java
+   public InterfaceDefinition staticIntf;  // Interface that holds the static methods and properties of an object
    public boolean isStaticOnly = false;       // Do not generate any instance properties or methods for the interface since it's not possible to instantiate the object
    
    public boolean isFunction()
