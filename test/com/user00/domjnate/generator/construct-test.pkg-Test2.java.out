@@ -8,12 +8,12 @@ public interface Test2
 {
 @JsOverlay
 public static Node getPrototype(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {
-  com.user00.domjnate.util.EmptyInterface obj = com.user00.domjnate.util.Js.getMember(_win, "Test2", com.user00.domjnate.util.EmptyInterface.class);
+  java.lang.Object obj = com.user00.domjnate.util.Js.getMember(_win, "Test2", com.user00.domjnate.util.EmptyInterface.class);
   return com.user00.domjnate.util.Js.getMember(obj, "prototype", Node.class);
 }
 @JsOverlay
 public static void setPrototype(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win, Node val) {
-  com.user00.domjnate.util.EmptyInterface obj = com.user00.domjnate.util.Js.getMember(_win, "Test2", com.user00.domjnate.util.EmptyInterface.class);
+  java.lang.Object obj = com.user00.domjnate.util.Js.getMember(_win, "Test2", com.user00.domjnate.util.EmptyInterface.class);
   com.user00.domjnate.util.Js.setMember(obj, "prototype", val);
 }
 @JsOverlay

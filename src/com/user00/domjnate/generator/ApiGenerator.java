@@ -34,10 +34,13 @@ import com.user00.domjnate.generator.ast.TypeReference;
 public class ApiGenerator
 {
    String outputDir = "apigen";
-   String pkg = "com.user00.domjnate.api";
+//   String pkg = "com.user00.domjnate.api";
    ApiDefinition topLevel;
    
    FileOutputManager files = new FileOutputManager();
+   
+   /** Base package for everything. Only used for tests when references to unknown classes appear */
+   public String basePkg;
    
    static class FileOutputManager
    {
@@ -162,9 +165,9 @@ public class ApiGenerator
    void generateFunctionInterface(InterfaceDefinition intf, ApiDefinition api) throws IOException
    {
       Set<String> imports = new HashSet<>();
-      String fullPkg = getFullPackageForInterface(api, intf);
 
       String name = intf.name;
+      final String fullPkg = intf.finalPkg;
       files.makeFile(outputDir, fullPkg, name, (outmain) -> {
          String body;
          try (StringWriter stringWriter = new StringWriter();
@@ -235,7 +238,7 @@ public class ApiGenerator
       }
       String name = intf.name;
       InterfaceDefinition staticIntf = intf.staticIntf;
-      String fullPkg = getFullPackageForInterface(api, intf);
+      final String fullPkg = intf.finalPkg;
       
       files.makeFile(outputDir, fullPkg, name, (outmain) -> {
          String intfBody;
@@ -710,41 +713,6 @@ public class ApiGenerator
          param.problems.dump(out);
    }
 
-   public String getFullPackageForInterface(ApiDefinition namespace, InterfaceDefinition intf)
-   {
-      if (intf.remapPackage != null)
-         return pkg + "." + intf.remapPackage;
-      String subpkg = null;
-      while (namespace.parent != null)
-      {
-         ApiDefinition parent = namespace.parent;
-         if (namespace.remapName != null)
-         {
-            if (subpkg == null)
-               subpkg = namespace.remapName;
-            else
-               subpkg = namespace.remapName + "." + subpkg;
-            break;
-         }
-         String levelName = null;
-         for (Map.Entry<String, ApiDefinition> entry: parent.namespaces.entrySet())
-         {
-            if (entry.getValue() == namespace)
-               levelName = entry.getKey();
-         }
-         if (levelName == null) throw new IllegalArgumentException("Cannot find namespace");
-         if (subpkg == null)
-            subpkg = levelName;
-         else
-            subpkg = levelName + "." + subpkg;
-         namespace = parent;
-      }
-      if (subpkg != null)
-         return pkg + "." + subpkg;
-      else
-         return pkg;
-   }
-   
    public void generate(String namespaceName, ApiDefinition api) throws IOException
    {
 //      String levelName = namespaceName;

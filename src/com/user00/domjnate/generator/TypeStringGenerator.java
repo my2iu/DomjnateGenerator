@@ -102,9 +102,9 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
             api = api.namespaces.get(p);
          InterfaceDefinition referredIntf = api.interfaces.get(parts[parts.length - 1]);
          if (ctx.typeDescription)
-            return apiGenerator.getFullPackageForInterface(api, referredIntf) + "." + referredIntf.name + ".class";
+            return referredIntf.finalPkg + "." + referredIntf.name + ".class";
          else
-            return apiGenerator.getFullPackageForInterface(api, referredIntf) + "." + referredIntf.name + typeArgs;
+            return referredIntf.finalPkg + "." + referredIntf.name + typeArgs;
       }
       if (ctx.namespaceScope.interfaces.containsKey(type.typeName))
       {
@@ -112,7 +112,7 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
          // type in the same namespace. We'll return the full type with
          // package name to be safe.
          // TODO: I'm ignoring this for now
-         String otherPkg = apiGenerator.getFullPackageForInterface(ctx.namespaceScope, ctx.namespaceScope.interfaces.get(type.typeName));
+         String otherPkg = ctx.namespaceScope.interfaces.get(type.typeName).finalPkg;
          if (!otherPkg.equals(ctx.currentPackage))
          {
             if (ctx.typeDescription)
@@ -124,7 +124,7 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
       else if (apiGenerator.topLevel.interfaces.containsKey(type.typeName))
       {
          ApiDefinition api = apiGenerator.topLevel;
-         String otherPkg = apiGenerator.getFullPackageForInterface(apiGenerator.topLevel, apiGenerator.topLevel.interfaces.get(type.typeName));
+         String otherPkg = apiGenerator.topLevel.interfaces.get(type.typeName).finalPkg;
          if (!otherPkg.equals(ctx.currentPackage))
          {
             if (ctx.typeDescription)
@@ -159,9 +159,12 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
       if (ctx.stripArray)
          return typeString(type.type, ctx.withStripArray(false));
       String pkgPrefix = "";
-      if (ctx.currentPackage != null && !ctx.currentPackage.equals(this.apiGenerator.pkg))
+      // If we aren't in the same package as the Array type
+      InterfaceDefinition arrayIntf = apiGenerator.topLevel.interfaces.get("Array"); 
+      String arrayPkg = arrayIntf != null ? arrayIntf.finalPkg : apiGenerator.basePkg; 
+      if (ctx.currentPackage != null && !ctx.currentPackage.equals(arrayPkg))
       {
-         pkgPrefix = this.apiGenerator.pkg + ".";
+         pkgPrefix = arrayPkg + ".";
       }
       if (ctx.typeDescription)
          return pkgPrefix + "Array.class";

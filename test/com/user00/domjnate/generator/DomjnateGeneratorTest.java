@@ -12,9 +12,9 @@ public class DomjnateGeneratorTest
    {
       ApiGenerator generator = new ApiGenerator();
       generator.outputDir = "";
-      generator.pkg = "test.pkg";
       generator.files = files;
       DomjnateGenerator domjnateGenerator = new DomjnateGenerator();
+      domjnateGenerator.pkg = "test.pkg";
       domjnateGenerator.go(new CharStream[] {CharStreams.fromStream(this.getClass().getResourceAsStream(tsResourceName))}, generator);
    }
    

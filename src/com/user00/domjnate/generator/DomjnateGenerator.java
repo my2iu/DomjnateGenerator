@@ -10,7 +10,6 @@ import org.antlr.v4.runtime.CharStreams;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
-import com.user00.domjnate.generator.ast.ErrorType;
 import com.user00.domjnate.generator.ast.FunctionType;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
@@ -23,6 +22,8 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser;
 public class DomjnateGenerator
 {
    String outputDir = "apigen";
+   String pkg = "com.user00.domjnate.api";
+   
    public void go() throws IOException
    {
       ApiGenerator generator = new ApiGenerator();
@@ -54,8 +55,12 @@ public class DomjnateGenerator
       // Move lambdas to be proper function interfaces
       new ExtractFunctionInterfaces().convertFunctions(api);
       
+      // Figure out the packages for all the interfaces
+      new AssignPackages(api, pkg).go(api);
+      
       // Generate JsInterop API based on type data that we've read
       generator.topLevel = api;
+      generator.basePkg = pkg;
       generator.generate(null, api);
    }
    
