@@ -1,5 +1,6 @@
 package test.pkg;
 
+import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
@@ -28,4 +29,12 @@ void setArr(Array<String> val);
 Void getK();
 @JsProperty(name="k")
 void setK(Void val);
+@JsProperty(name="onclick")
+OnclickCallback getOnclick();
+@JsProperty(name="onclick")
+void setOnclick(OnclickCallback val);
+@JsFunction public static interface OnclickCallback
+{
+boolean apply(Event e);
+}
 }

@@ -13,4 +13,10 @@ public class ErrorType extends Type
       return visitor.visitErrorType(this);
    }
 
+   @Override
+   public <I, U> U visit(TypeVisitorWithInput<I, U> visitor, I in)
+   {
+      return visitor.visitErrorType(this, in);
+   }
+
 }

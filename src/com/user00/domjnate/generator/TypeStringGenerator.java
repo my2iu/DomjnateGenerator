@@ -5,6 +5,7 @@ import java.util.Arrays;
 import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.ArrayType;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
+import com.user00.domjnate.generator.ast.LocalFunctionType;
 import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.StringLiteralType;
@@ -37,6 +38,16 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
       case "symbol": type = "com.user00.domjnate.api.Symbol"; break;
       default: type = "unknown"; break;
       }
+      if (ctx.typeDescription)
+         return type + ".class";
+      else
+         return type;
+   }
+   
+   @Override
+   public String visitLocalFunctionType(LocalFunctionType fnType)
+   {
+      String type = fnType.nestedName;
       if (ctx.typeDescription)
          return type + ".class";
       else

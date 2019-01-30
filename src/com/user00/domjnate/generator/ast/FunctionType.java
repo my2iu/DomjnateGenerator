@@ -9,4 +9,10 @@ public class FunctionType extends Type
    {
       return visitor.visitFunctionType(this);
    }
+
+   @Override
+   public <I, U> U visit(TypeVisitorWithInput<I, U> visitor, I in)
+   {
+      return visitor.visitFunctionType(this, in);
+   }
 }

@@ -6,4 +6,5 @@ interface Test
 	d?: number;
 	arr: string[];
 	k : undefined;
+	onclick : null | ((e : Event) => boolean);
 }

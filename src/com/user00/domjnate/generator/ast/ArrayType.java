@@ -9,4 +9,10 @@ public class ArrayType extends Type
    {
       return visitor.visitArrayType(this);
    }
+
+   @Override
+   public <I, U> U visit(TypeVisitorWithInput<I, U> visitor, I in)
+   {
+      return visitor.visitArrayType(this, in);
+   }
 }

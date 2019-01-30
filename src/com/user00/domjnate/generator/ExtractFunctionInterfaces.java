@@ -7,7 +7,8 @@ import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.FunctionType;
 import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
-import com.user00.domjnate.generator.ast.PredefinedType;
+import com.user00.domjnate.generator.ast.LocalFunctionType;
+import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
 
@@ -17,32 +18,79 @@ import com.user00.domjnate.generator.ast.Type;
  */
 public class ExtractFunctionInterfaces
 {
+   static boolean checkInterfaceExists(String name, ApiDefinition api, Map<String, CallSignatureDefinition> localFunctionTypes)
+   {
+      // Not quite correct because we're using JS namespaces instead of Java packages
+      if (api.interfaces.containsKey(name)) return true;
+      if (localFunctionTypes.containsKey(name)) return true;
+      return false;
+   }
+   
+   class FunctionTypeExtractor extends Type.TypeVisitorWithInput<String, Type>
+   {
+      Map<String, CallSignatureDefinition> localFunctionTypes;
+      ApiDefinition api;
+      FunctionTypeExtractor(ApiDefinition api, InterfaceDefinition intf)
+      {
+         localFunctionTypes = intf.functionTypes;
+         this.api = api;
+      }
+
+      Type substituteFunctionType(FunctionType type, String name)
+      {
+         LocalFunctionType nestedType = new LocalFunctionType();
+         nestedType.callSigType = type.callSigType;
+         nestedType.nestedName = name;
+         // Sometimes the callback method signatures have a "this" argument set, but that
+         // doesn't work in Java anyway, so I'll remove it from the argument list.
+         if (nestedType.callSigType.params != null && nestedType.callSigType.params.size() > 0
+               && nestedType.callSigType.params.get(0).name.equals("this"))
+         {
+            nestedType.callSigType.params.remove(0);
+         }
+         localFunctionTypes.put(nestedType.nestedName, nestedType.callSigType);
+         return nestedType;
+      }
+      
+      @Override
+      public Type visitFunctionType(FunctionType type, String functionTypeBaseName) 
+      {
+         functionTypeBaseName = functionTypeBaseName.substring(0, 1).toUpperCase() + functionTypeBaseName.substring(1);
+         String fnTypeName = functionTypeBaseName + "Callback";
+         if (!checkInterfaceExists(fnTypeName, api, localFunctionTypes))
+         {
+            return substituteFunctionType(type, fnTypeName);
+         }
+         for (int n = 0; ; n++)
+         {
+            fnTypeName = functionTypeBaseName + "Callback" + n;
+            if (!checkInterfaceExists(fnTypeName, api, localFunctionTypes))
+            {
+               return substituteFunctionType(type, fnTypeName);
+            }
+         }
+      }
+      
+      @Override
+      public Type visitNullableType(NullableType type, String in)
+      {
+         type.subtype = type.subtype.visit(this, in);
+         return type;
+      }
+      
+      @Override
+      public Type visitType(Type type, String functionTypeBaseName)
+      {
+         return type;
+      }
+
+   }
+
    void handleFunctionInterface(InterfaceDefinition intf, ApiDefinition api) 
    {
       
    }
 
-   class FunctionTypeExtractor extends Type.TypeVisitor<Type>
-   {
-      Map<String, CallSignatureDefinition> localFunctionTypes;
-      FunctionTypeExtractor(InterfaceDefinition intf)
-      {
-         localFunctionTypes = intf.functionTypes;
-      }
-
-      @Override
-      public Type visitFunctionType(FunctionType type) 
-      {
-         return type;
-      }
-      
-      public Type visitType(Type type)
-      {
-         return type;
-      }
-
-   }
-   
    void handleInterface(ApiDefinition api, InterfaceDefinition intf) 
    {
       if (intf.doNotGenerateJava) return;
@@ -53,13 +101,13 @@ public class ExtractFunctionInterfaces
       }
       String name = intf.name;
       InterfaceDefinition staticIntf = intf.staticIntf;
-      FunctionTypeExtractor functionReplacer = new FunctionTypeExtractor(intf);
+      FunctionTypeExtractor functionReplacer = new FunctionTypeExtractor(api, intf);
       
       if (!intf.isStaticOnly)
       {
          for (PropertyDefinition prop: intf.properties)
          {
-            prop.type = prop.type.visit(functionReplacer);
+            prop.type = prop.type.visit(functionReplacer, prop.name);
          }
          for (PropertyDefinition method: intf.methods)
          {
@@ -137,7 +185,7 @@ public class ExtractFunctionInterfaces
       {
          for (PropertyDefinition prop: staticIntf.properties)
          {
-            prop.type = prop.type.visit(functionReplacer);
+            prop.type = prop.type.visit(functionReplacer, prop.name);
 //            makeProperty(out, name, prop, api, fullPkg, generics, true, imports);
          }
          for (PropertyDefinition method: staticIntf.methods)

@@ -41,4 +41,11 @@ public class TypeReference extends Type
       return visitor.visitTypeReferenceType(this);
    }
 
+
+   @Override
+   public <I, U> U visit(TypeVisitorWithInput<I, U> visitor, I in)
+   {
+      return visitor.visitTypeReferenceType(this, in);
+   }
+
 }

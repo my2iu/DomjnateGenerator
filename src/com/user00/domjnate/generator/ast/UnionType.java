@@ -21,4 +21,10 @@ public class UnionType extends Type
    {
       return visitor.visitUnionType(this);
    }
+
+   @Override
+   public <I, U> U visit(TypeVisitorWithInput<I, U> visitor, I in)
+   {
+      return visitor.visitUnionType(this, in);
+   }
 }

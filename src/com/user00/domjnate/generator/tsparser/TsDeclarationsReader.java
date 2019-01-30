@@ -53,6 +53,7 @@ import com.user00.domjnate.generator.tsparser.TsIdlParser.NamespaceNameContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ObjectTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.OptionalParameterContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.ParameterListContext;
+import com.user00.domjnate.generator.tsparser.TsIdlParser.ParenthesizedTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PredefinedTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeContext;
 import com.user00.domjnate.generator.tsparser.TsIdlParser.PrimaryTypeIndexableArrayContext;
@@ -193,6 +194,11 @@ public class TsDeclarationsReader
          FunctionType fnType = new FunctionType();
          fnType.callSigType = callReader.sig;
          return fnType;
+      }
+
+      @Override public Type visitParenthesizedType(ParenthesizedTypeContext ctx) 
+      {
+         return ctx.type().accept(this);
       }
       
       @Override public Type visitPrimaryType(PrimaryTypeContext ctx) 

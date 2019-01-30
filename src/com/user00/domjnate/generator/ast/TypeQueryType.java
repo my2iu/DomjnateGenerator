@@ -10,4 +10,10 @@ public class TypeQueryType extends Type
       return visitor.visitTypeQueryType(this);
    }
 
+   @Override
+   public <I, U> U visit(TypeVisitorWithInput<I, U> visitor, I in)
+   {
+      return visitor.visitTypeQueryType(this, in);
+   }
+
 }

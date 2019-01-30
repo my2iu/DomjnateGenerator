@@ -9,4 +9,10 @@ public class NullableType extends Type
    {
       return visitor.visitNullableType(this);
    }
+
+   @Override
+   public <I, U> U visit(TypeVisitorWithInput<I, U> visitor, I in)
+   {
+      return visitor.visitNullableType(this, in);
+   }
 }

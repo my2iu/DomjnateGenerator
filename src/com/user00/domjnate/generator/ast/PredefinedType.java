@@ -8,4 +8,10 @@ public class PredefinedType extends Type
    {
       return visitor.visitPredefinedType(this);
    }
+   
+   @Override
+   public <I, U> U visit(TypeVisitorWithInput<I, U> visitor, I in)
+   {
+      return visitor.visitPredefinedType(this, in);
+   }
 }

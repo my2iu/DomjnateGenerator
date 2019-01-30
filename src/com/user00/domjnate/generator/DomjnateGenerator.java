@@ -9,6 +9,7 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
+import com.user00.domjnate.generator.ast.ArrayType;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
 import com.user00.domjnate.generator.ast.FunctionType;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
@@ -16,6 +17,7 @@ import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.StringLiteralType;
 import com.user00.domjnate.generator.ast.TypeReference;
+import com.user00.domjnate.generator.ast.UnionType;
 import com.user00.domjnate.generator.tsparser.TsDeclarationsReader;
 import com.user00.domjnate.generator.tsparser.TsIdlParser;
 
@@ -88,7 +90,14 @@ public class DomjnateGenerator
          
          // TODO: write a new filter() that only accepts bools instead of truthy values
          api.interfaces.get("Array").methods.removeIf(
-               method -> "filter".equals(method.name) && method.callSigType.genericTypeParameters != null); 
+               method -> "filter".equals(method.name) && method.callSigType.genericTypeParameters != null);
+         
+         // concat accepts T or Array<T>, but I'll make it accept on or the either but not both
+         api.interfaces.get("Array").methods.forEach(method -> {
+            if ("concat".equals(method.name) && ((ArrayType)method.callSigType.restParameter.type).type instanceof UnionType)
+            {
+               ((ArrayType)method.callSigType.restParameter.type).type = ((UnionType)((ArrayType)method.callSigType.restParameter.type).type).subtypes.get(1);
+            }});
       }
       if (api.interfaces.containsKey("ReadonlyArray"))
       {
@@ -100,7 +109,14 @@ public class DomjnateGenerator
          
          // TODO: write a new filter() that only accepts bools instead of truthy values
          api.interfaces.get("ReadonlyArray").methods.removeIf(
-               method -> "filter".equals(method.name) && method.callSigType.genericTypeParameters != null); 
+               method -> "filter".equals(method.name) && method.callSigType.genericTypeParameters != null);
+         
+         // concat accepts T or Array<T>, but I'll make it accept on or the either but not both
+         api.interfaces.get("ReadonlyArray").methods.forEach(method -> {
+            if ("concat".equals(method.name) && ((ArrayType)method.callSigType.restParameter.type).type instanceof UnionType)
+            {
+               ((ArrayType)method.callSigType.restParameter.type).type = ((UnionType)((ArrayType)method.callSigType.restParameter.type).type).subtypes.get(1);
+            }});
       }
       if (api.interfaces.containsKey("ArrayConstructor"))
       {

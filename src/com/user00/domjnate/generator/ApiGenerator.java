@@ -347,6 +347,10 @@ public class ApiGenerator
                {
                   out.println("Unhandled call signature on interface");
                }
+               for (Map.Entry<String, CallSignatureDefinition> fnTypeEntry: intf.functionTypes.entrySet())
+               {
+                  makeNestedFunctionType(out, fnTypeEntry.getKey(), fnTypeEntry.getValue(), api, fullPkg, imports);
+               }
             }
             
             if (staticIntf != null)
@@ -373,6 +377,10 @@ public class ApiGenerator
                {
                   out.println("Unhandled static index");
                }
+               for (Map.Entry<String, CallSignatureDefinition> fnTypeEntry: staticIntf.functionTypes.entrySet())
+               {
+                  makeNestedFunctionType(out, fnTypeEntry.getKey(), fnTypeEntry.getValue(), api, fullPkg, imports);
+               }
             }
             
             out.println("}");
@@ -397,6 +405,28 @@ public class ApiGenerator
          outmain.print(intfBody);
 
       });
+   }
+
+   private void makeNestedFunctionType(PrintWriter out, String name, CallSignatureDefinition call, ApiDefinition api, String currentPackage, Set<String> imports)
+   {
+      imports.add("jsinterop.annotations.JsFunction");
+      out.println(String.format("@JsFunction public static interface %1$s", name));
+      out.println("{");
+      if (call.genericTypeParameters != null)
+         out.println("Unhandled type parameters on function interface call signature");
+      GenericContext generics = new GenericContext(call.genericTypeParameters);
+      int numArguments = call.params.size();
+      numArguments += call.optionalParams.size();
+      if (call.restParameter != null)
+         numArguments += 1;
+      int [] variants = new int[numArguments];
+      Arrays.fill(variants, -1);
+      int numOptional = call.optionalParams.size();
+      // TODO: Use @JsOptional on optional parameters
+      // TODO: better handling of unions (don't just fallback to java.lang.Object)
+      generateMethodWithOptionals(out, "apply", call, api, null, currentPackage, generics, null, numOptional, variants, false);
+
+      out.println("}");
    }
 
    private void makeStaticCallOnInterface(PrintWriter out, String name, CallSignatureDefinition sig, ApiDefinition api, String currentPackage, GenericContext generics, Set<String> imports)
