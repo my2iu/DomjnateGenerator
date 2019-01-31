@@ -24,6 +24,7 @@ import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
+import com.user00.domjnate.generator.ast.LocalFunctionDefinition;
 import com.user00.domjnate.generator.ast.PredefinedType;
 import com.user00.domjnate.generator.ast.ProblemTracker;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
@@ -347,7 +348,7 @@ public class ApiGenerator
                {
                   out.println("Unhandled call signature on interface");
                }
-               for (Map.Entry<String, CallSignatureDefinition> fnTypeEntry: intf.functionTypes.entrySet())
+               for (Map.Entry<String, LocalFunctionDefinition> fnTypeEntry: intf.functionTypes.entrySet())
                {
                   makeNestedFunctionType(out, fnTypeEntry.getKey(), fnTypeEntry.getValue(), api, fullPkg, imports);
                }
@@ -377,7 +378,7 @@ public class ApiGenerator
                {
                   out.println("Unhandled static index");
                }
-               for (Map.Entry<String, CallSignatureDefinition> fnTypeEntry: staticIntf.functionTypes.entrySet())
+               for (Map.Entry<String, LocalFunctionDefinition> fnTypeEntry: staticIntf.functionTypes.entrySet())
                {
                   makeNestedFunctionType(out, fnTypeEntry.getKey(), fnTypeEntry.getValue(), api, fullPkg, imports);
                }
@@ -407,14 +408,21 @@ public class ApiGenerator
       });
    }
 
-   private void makeNestedFunctionType(PrintWriter out, String name, CallSignatureDefinition call, ApiDefinition api, String currentPackage, Set<String> imports)
+   private void makeNestedFunctionType(PrintWriter out, String name, LocalFunctionDefinition fnDef, ApiDefinition api, String currentPackage, Set<String> imports)
    {
+      CallSignatureDefinition call = fnDef.callSigType;
       imports.add("jsinterop.annotations.JsFunction");
-      out.println(String.format("@JsFunction public static interface %1$s", name));
+      out.print(String.format("@JsFunction public static interface %1$s", name));
+      GenericContext intfGenerics = new GenericContext(fnDef.genericTypeParams);
+      if (fnDef.genericTypeParams != null)
+      {
+         generateGenericTypeParams(out, fnDef.genericTypeParams, api, currentPackage, intfGenerics);
+      }
+      out.println();
       out.println("{");
       if (call.genericTypeParameters != null)
          out.println("Unhandled type parameters on function interface call signature");
-      GenericContext generics = new GenericContext(call.genericTypeParameters);
+      GenericContext generics = new GenericContext(call.genericTypeParameters, intfGenerics);
       int numArguments = call.params.size();
       numArguments += call.optionalParams.size();
       if (call.restParameter != null)
@@ -643,18 +651,12 @@ public class ApiGenerator
    
    private void generateMethod(PrintWriter out, PropertyDefinition method, ApiDefinition api, InterfaceDefinition sourceIntf, String currentPackage, GenericContext generics)
    {
-      if (method.callSigType.genericTypeParameters != null)
+      if (ExtractFunctionInterfaces.hasGenericKeyOfParameters(method.callSigType))
       {
-         // Ignore keyof generic type parameters for now
-         for (GenericParameter generic: method.callSigType.genericTypeParameters)
-         {
-            if (generic.simpleExtendsKeyOf != null)
-            {
-               out.println("// TODO: Suppressing generic keyof type parameter for " + method.name);
-               return;
-            }
-         }
+         out.println("// TODO: Suppressing generic keyof type parameter for " + method.name);
+         return;
       }
+
       if (method.optional)
          out.println("Unhandled method with optional " + method.name);
 
@@ -690,17 +692,10 @@ public class ApiGenerator
 
    private void generateStaticMethod(PrintWriter out, String className, PropertyDefinition method, ApiDefinition api, String currentPackage, GenericContext generics)
    {
-      if (method.callSigType.genericTypeParameters != null)
+      if (ExtractFunctionInterfaces.hasGenericKeyOfParameters(method.callSigType))
       {
-         // Ignore keyof generic type parameters for now
-         for (GenericParameter generic: method.callSigType.genericTypeParameters)
-         {
-            if (generic.simpleExtendsKeyOf != null)
-            {
-               out.println("// TODO: Suppressing generic keyof type parameter for " + method.name);
-               return;
-            }
-         }
+         out.println("// TODO: Suppressing generic keyof type parameter for " + method.name);
+         return;
       }
       if (method.optional)
          out.println("Unhandled static method with optional " + method.name);

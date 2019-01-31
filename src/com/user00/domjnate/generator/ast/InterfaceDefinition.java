@@ -29,7 +29,7 @@ public class InterfaceDefinition
    // Extra interface information derived by transforming the TypeScript idl to make it more appropriate for Java
    public InterfaceDefinition staticIntf;  // Interface that holds the static methods and properties of an object
    public boolean isStaticOnly = false;       // Do not generate any instance properties or methods for the interface since it's not possible to instantiate the object
-   public Map<String, CallSignatureDefinition> functionTypes = new HashMap<>();  // Function types used specifically in this interface
+   public Map<String, LocalFunctionDefinition> functionTypes = new HashMap<>();  // Function types used specifically in this interface
    public String finalPkg;  // final package where interface should be placed
    
    public boolean isFunction()

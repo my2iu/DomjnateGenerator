@@ -1,6 +1,7 @@
 interface GenericIntf<T, Z extends Node>
 {
 	[idx:number]: Z;
+	methodCallbackGeneric<S>(a : (b: Z) => S) : void;
 }
 
 interface Test

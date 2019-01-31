@@ -1,11 +1,15 @@
 package test.pkg;
 
+import jsinterop.annotations.JsFunction;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsType;
 
 @JsType(isNative=true,name="GenericIntf")
 public interface GenericIntf<T,Z extends Node> 
 {
+@JsMethod(name="methodCallbackGeneric")
+<S> void methodCallbackGeneric(MethodCallbackGenericCallback a);
 @JsOverlay
 public default Z get(double idx, Class<Z> _type) {
   return (Z)com.user00.domjnate.util.Js.getIndex(this, idx, _type);
@@ -13,6 +17,10 @@ public default Z get(double idx, Class<Z> _type) {
 @JsOverlay
 public default void set(double idx, Z val) {
   com.user00.domjnate.util.Js.setIndex(this, idx, val);
+}
+@JsFunction public static interface MethodCallbackGenericCallback<S,Z extends Node> 
+{
+S apply(Z b);
 }
 @JsOverlay
 public static GenericIntf<Double, Node> getA(com.user00.domjnate.api.WindowOrWorkerGlobalScope _win) {

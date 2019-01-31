@@ -1,5 +1,6 @@
 package test.pkg;
 
+import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 
@@ -19,7 +20,7 @@ void optionalParams(String a, String b);
 @JsMethod(name="optionalParams")
 void optionalParams(String a, String b, String c);
 @JsMethod(name="methodCallback")
-void methodCallback(java.lang.Object a);
+void methodCallback(MethodCallbackCallback a);
 @JsMethod(name="methodUnion")
 java.lang.Object methodUnion(C a, Double b);
 @JsMethod(name="methodUnion")
@@ -28,4 +29,8 @@ java.lang.Object methodUnion(B a, Double b);
 java.lang.Object methodUnion(C a, String b);
 @JsMethod(name="methodUnion")
 java.lang.Object methodUnion(B a, String b);
+@JsFunction public static interface MethodCallbackCallback
+{
+double apply(String b);
+}
 }

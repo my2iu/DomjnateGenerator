@@ -1,16 +1,22 @@
 package com.user00.domjnate.generator;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.CallSignatureDefinition;
+import com.user00.domjnate.generator.ast.CallSignatureDefinition.CallParameter;
 import com.user00.domjnate.generator.ast.FunctionType;
+import com.user00.domjnate.generator.ast.GenericParameter;
 import com.user00.domjnate.generator.ast.IndexSignatureDefinition;
 import com.user00.domjnate.generator.ast.InterfaceDefinition;
+import com.user00.domjnate.generator.ast.LocalFunctionDefinition;
 import com.user00.domjnate.generator.ast.LocalFunctionType;
 import com.user00.domjnate.generator.ast.NullableType;
 import com.user00.domjnate.generator.ast.PropertyDefinition;
 import com.user00.domjnate.generator.ast.Type;
+import com.user00.domjnate.generator.ast.TypeReference;
 
 /**
  * Finds all the callback functions used and converts them to 
@@ -18,7 +24,7 @@ import com.user00.domjnate.generator.ast.Type;
  */
 public class ExtractFunctionInterfaces
 {
-   static boolean checkInterfaceExists(String name, ApiDefinition api, Map<String, CallSignatureDefinition> localFunctionTypes)
+   static boolean checkInterfaceExists(String name, ApiDefinition api, Map<String, LocalFunctionDefinition> localFunctionTypes)
    {
       // Not quite correct because we're using JS namespaces instead of Java packages
       if (api.interfaces.containsKey(name)) return true;
@@ -26,9 +32,36 @@ public class ExtractFunctionInterfaces
       return false;
    }
    
-   class FunctionTypeExtractor extends Type.TypeVisitorWithInput<String, Type>
+   class GenericParameterExtractor extends Type.RecursiveTypeVisitorWithInput<GenericContext>
    {
-      Map<String, CallSignatureDefinition> localFunctionTypes;
+      List<GenericParameter> genericTypeParams = new ArrayList<>();
+      
+      @Override public Void visitTypeReferenceType(TypeReference type, GenericContext generics)
+      {
+         if (generics.isGeneric(type))
+         {
+            GenericParameter param = generics.getGenericParam(type);
+            if (!genericTypeParams.contains(param))
+               genericTypeParams.add(param);
+         }
+         return null;
+      }
+   }
+   
+   class FunctionTypeExtractorContext 
+   {
+      FunctionTypeExtractorContext(String name, GenericContext generics)
+      {
+         this.functionTypeBaseName = name;
+         this.generics = generics;
+      }
+      String functionTypeBaseName;
+      GenericContext generics;
+   }
+   
+   class FunctionTypeExtractor extends Type.TypeVisitorWithInput<FunctionTypeExtractorContext, Type>
+   {
+      Map<String, LocalFunctionDefinition> localFunctionTypes;
       ApiDefinition api;
       FunctionTypeExtractor(ApiDefinition api, InterfaceDefinition intf)
       {
@@ -36,8 +69,13 @@ public class ExtractFunctionInterfaces
          this.api = api;
       }
 
-      Type substituteFunctionType(FunctionType type, String name)
+      Type substituteFunctionType(FunctionType type, String name, GenericContext generics)
       {
+         // Figure out what generic parameters are used
+         GenericParameterExtractor genericParamExtractor = new GenericParameterExtractor();
+         type.visit(genericParamExtractor, generics);
+
+         // Replace the function type with a reference to a nested interface
          LocalFunctionType nestedType = new LocalFunctionType();
          nestedType.callSigType = type.callSigType;
          nestedType.nestedName = name;
@@ -48,47 +86,83 @@ public class ExtractFunctionInterfaces
          {
             nestedType.callSigType.params.remove(0);
          }
-         localFunctionTypes.put(nestedType.nestedName, nestedType.callSigType);
+         
+         // Create the nested interface too
+         LocalFunctionDefinition fn = new LocalFunctionDefinition();
+         fn.callSigType = nestedType.callSigType;
+         if (!genericParamExtractor.genericTypeParams.isEmpty())
+            fn.genericTypeParams = genericParamExtractor.genericTypeParams;
+         localFunctionTypes.put(nestedType.nestedName, fn);
          return nestedType;
       }
       
       @Override
-      public Type visitFunctionType(FunctionType type, String functionTypeBaseName) 
+      public Type visitFunctionType(FunctionType type, FunctionTypeExtractorContext ctx) 
       {
-         functionTypeBaseName = functionTypeBaseName.substring(0, 1).toUpperCase() + functionTypeBaseName.substring(1);
+         String functionTypeBaseName = ctx.functionTypeBaseName.substring(0, 1).toUpperCase() + ctx.functionTypeBaseName.substring(1);
          String fnTypeName = functionTypeBaseName + "Callback";
          if (!checkInterfaceExists(fnTypeName, api, localFunctionTypes))
          {
-            return substituteFunctionType(type, fnTypeName);
+            return substituteFunctionType(type, fnTypeName, ctx.generics);
          }
          for (int n = 0; ; n++)
          {
             fnTypeName = functionTypeBaseName + "Callback" + n;
             if (!checkInterfaceExists(fnTypeName, api, localFunctionTypes))
             {
-               return substituteFunctionType(type, fnTypeName);
+               return substituteFunctionType(type, fnTypeName, ctx.generics);
             }
          }
       }
       
       @Override
-      public Type visitNullableType(NullableType type, String in)
+      public Type visitNullableType(NullableType type, FunctionTypeExtractorContext in)
       {
          type.subtype = type.subtype.visit(this, in);
          return type;
       }
       
       @Override
-      public Type visitType(Type type, String functionTypeBaseName)
+      public Type visitType(Type type, FunctionTypeExtractorContext in)
       {
          return type;
       }
 
+      public void visitCallSignature(CallSignatureDefinition callSigType, FunctionTypeExtractorContext superCtx)
+      {
+         FunctionTypeExtractorContext ctx = new FunctionTypeExtractorContext(superCtx.functionTypeBaseName, new GenericContext(callSigType.genericTypeParameters, superCtx.generics));
+         if (callSigType.returnType != null)
+            callSigType.returnType = callSigType.returnType.visit(this, ctx);
+         if (callSigType.restParameter != null)
+            callSigType.restParameter.type = callSigType.restParameter.type.visit(this, ctx);
+         if (callSigType.optionalParams != null)
+         {
+            for (CallParameter param: callSigType.optionalParams)
+            {
+               if (param.type != null)
+                  param.type = param.type.visit(this, ctx);
+            }
+         }
+         if (callSigType.params != null)
+         {
+            for (CallParameter param: callSigType.params)
+            {
+               if (param.type != null)
+                  param.type = param.type.visit(this, ctx);
+            }
+         }
+      }
    }
 
    void handleFunctionInterface(InterfaceDefinition intf, ApiDefinition api) 
    {
-      
+      String name = intf.name;
+      GenericContext generics = new GenericContext(intf.genericTypeParams);
+      FunctionTypeExtractor functionReplacer = new FunctionTypeExtractor(api, intf);
+      for (CallSignatureDefinition call: intf.callSignatures)
+      {
+         functionReplacer.visitCallSignature(call, new FunctionTypeExtractorContext(name, generics));
+      }
    }
 
    void handleInterface(ApiDefinition api, InterfaceDefinition intf) 
@@ -101,79 +175,27 @@ public class ExtractFunctionInterfaces
       }
       String name = intf.name;
       InterfaceDefinition staticIntf = intf.staticIntf;
+      GenericContext generics = new GenericContext(intf.genericTypeParams);
       FunctionTypeExtractor functionReplacer = new FunctionTypeExtractor(api, intf);
       
       if (!intf.isStaticOnly)
       {
          for (PropertyDefinition prop: intf.properties)
          {
-            prop.type = prop.type.visit(functionReplacer, prop.name);
+            prop.type = prop.type.visit(functionReplacer, new FunctionTypeExtractorContext(prop.name, generics));
          }
          for (PropertyDefinition method: intf.methods)
          {
-
-//            imports.add("jsinterop.annotations.JsMethod");
-//            generateMethod(out, method, api, intf, fullPkg, generics);
+            if (hasGenericKeyOfParameters(method.callSigType)) continue;
+            functionReplacer.visitCallSignature(method.callSigType, new FunctionTypeExtractorContext(method.name, generics));
          }
          for (IndexSignatureDefinition idxSig: intf.indexSignatures)
          {
-//            // TODO: Just a temporary handling of wrapping generics to get things to compile
-//            // (this should eventually be handled better)
-//            boolean isReturnGeneric = generics.isGeneric(idxSig.returnType);
-//            
-//            String returnType = typeString(idxSig.returnType, new TypeStringGenerationContext(api, fullPkg, generics));
-//            String returnTypeDescription = typeString(idxSig.returnType, new TypeStringGenerationContext(api, fullPkg, generics).withTypeDescription(true));
-//            imports.add("jsinterop.annotations.JsOverlay");
-//            if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("number"))
-//            {
-//               out.println("@JsOverlay");
-//               if (isReturnGeneric)
-//               {
-//                  out.println(String.format("public default %1$s get(double %2$s, Class<%1$s> _type) {", returnType, idxSig.indexName));
-//                  out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getIndex(this, %2$s, _type);", returnType, idxSig.indexName));
-//               }
-//               else
-//               {
-//                  out.println(String.format("public default %1$s get(double %2$s) {", returnType, idxSig.indexName));
-//                  out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getIndex(this, %2$s, %3$s);", returnType, idxSig.indexName, returnTypeDescription));
-//               }
-//               out.println("}");
-//               if (!idxSig.readOnly) 
-//               {
-//                  out.println("@JsOverlay");
-//                  out.println(String.format("public default void set(double %2$s, %1$s val) {", returnType, idxSig.indexName));
-//                  out.println(String.format("  com.user00.domjnate.util.Js.setIndex(this, %2$s, val);", returnType, idxSig.indexName));
-//                  out.println("}");
-//               }
-//            }
-//            else if (idxSig.indexType instanceof PredefinedType && ((PredefinedType)idxSig.indexType).type.equals("string"))
-//            {
-//               out.println("@JsOverlay");
-//               if (isReturnGeneric)
-//               {
-//                  out.println(String.format("public default %1$s get(String %2$s, Class<%1$s> _type) {", returnType, idxSig.indexName));
-//                  out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getMember(this, %2$s, _type);", returnType, idxSig.indexName));
-//               }
-//               else
-//               {
-//                  out.println(String.format("public default %1$s get(String %2$s) {", returnType, idxSig.indexName));
-//                  out.println(String.format("  return (%1$s)com.user00.domjnate.util.Js.getMember(this, %2$s, %3$s);", returnType, idxSig.indexName, returnTypeDescription));
-//               }
-//               out.println("}");
-//               if (!idxSig.readOnly) 
-//               {
-//                  out.println("@JsOverlay");
-//                  out.println(String.format("public default void set(String %2$s, %1$s val) {", returnType, idxSig.indexName));
-//                  out.println(String.format("  com.user00.domjnate.util.Js.setMember(this, %2$s, val);", returnType, idxSig.indexName));
-//                  out.println("}");
-//               }
-//            }
-//            else
-//               out.println("Unhandled index signature on interface");
+            idxSig.indexType = idxSig.indexType.visit(functionReplacer, new FunctionTypeExtractorContext(name, generics)); 
          }
          for (CallSignatureDefinition construct: intf.constructSignatures)
          {
-//            makeConstructor(out, construct, api, fullPkg, generics, false, imports);
+            functionReplacer.visitCallSignature(construct, new FunctionTypeExtractorContext(name, generics));
          }
          for (CallSignatureDefinition call: intf.callSignatures)
          {
@@ -185,21 +207,20 @@ public class ExtractFunctionInterfaces
       {
          for (PropertyDefinition prop: staticIntf.properties)
          {
-            prop.type = prop.type.visit(functionReplacer, prop.name);
-//            makeProperty(out, name, prop, api, fullPkg, generics, true, imports);
+            prop.type = prop.type.visit(functionReplacer, new FunctionTypeExtractorContext(prop.name, generics));
          }
          for (PropertyDefinition method: staticIntf.methods)
          {
-//            imports.add("jsinterop.annotations.JsOverlay");
-//            generateStaticMethod(out, name, method, api, fullPkg, generics);
+            if (hasGenericKeyOfParameters(method.callSigType)) continue;
+            functionReplacer.visitCallSignature(method.callSigType, new FunctionTypeExtractorContext(method.name, generics));
          }
          for (CallSignatureDefinition call: staticIntf.callSignatures)
          {
-//            makeStaticCallOnInterface(out, intf.name, call, api, fullPkg, generics, imports);
+            functionReplacer.visitCallSignature(call, new FunctionTypeExtractorContext(name, generics));
          }
          for (CallSignatureDefinition construct: staticIntf.constructSignatures)
          {
-//            makeConstructor(out, construct, api, fullPkg, generics, true, imports);
+            functionReplacer.visitCallSignature(construct, new FunctionTypeExtractorContext(name, generics));
          }
          for (IndexSignatureDefinition idxSig: staticIntf.indexSignatures)
          {
@@ -207,6 +228,22 @@ public class ExtractFunctionInterfaces
          }
       }
 
+   }
+   
+   static boolean hasGenericKeyOfParameters(CallSignatureDefinition callSigType)
+   {
+      if (callSigType.genericTypeParameters != null)
+      {
+         // Ignore keyof generic type parameters for now
+         for (GenericParameter generic: callSigType.genericTypeParameters)
+         {
+            if (generic.simpleExtendsKeyOf != null)
+            {
+               return true;
+            }
+         }
+      }
+      return false;
    }
    
    public void convertFunctions(ApiDefinition api)
