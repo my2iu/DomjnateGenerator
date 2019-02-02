@@ -91,7 +91,16 @@ public class ExtractFunctionInterfaces
          LocalFunctionDefinition fn = new LocalFunctionDefinition();
          fn.callSigType = nestedType.callSigType;
          if (!genericParamExtractor.genericTypeParams.isEmpty())
+         {
             fn.genericTypeParams = genericParamExtractor.genericTypeParams;
+            nestedType.typeArgs = new ArrayList<>();
+            for (GenericParameter param: fn.genericTypeParams)
+            {
+               TypeReference ref = new TypeReference();
+               ref.typeName = param.name;
+               nestedType.typeArgs.add(ref);
+            }
+         }
          localFunctionTypes.put(nestedType.nestedName, fn);
          return nestedType;
       }

@@ -1,5 +1,7 @@
 package com.user00.domjnate.generator.ast;
 
+import java.util.List;
+
 /**
  * A synthetic type for a function interface defined as a nested class
  * of the interface.
@@ -7,8 +9,9 @@ package com.user00.domjnate.generator.ast;
 public class LocalFunctionType extends Type
 {
    public String nestedName;
+   public List<Type> typeArgs;
    public CallSignatureDefinition callSigType;
-
+   
    @Override
    public <U> U visit(TypeVisitor<U> visitor)
    {

@@ -1,6 +1,7 @@
 package com.user00.domjnate.generator;
 
 import java.util.Arrays;
+import java.util.List;
 
 import com.user00.domjnate.generator.ast.ApiDefinition;
 import com.user00.domjnate.generator.ast.ArrayType;
@@ -48,12 +49,14 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
    public String visitLocalFunctionType(LocalFunctionType fnType)
    {
       String type = fnType.nestedName;
+      String typeArgs = typeArgsToString(fnType.typeArgs);
       if (ctx.typeDescription)
          return type + ".class";
       else
-         return type;
+         return type + typeArgs;
    }
 
+   
    @Override
    public String visitTypeReferenceType(TypeReference type)
    {
@@ -66,21 +69,7 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
       {
          return this.typeString(this.apiGenerator.topLevel.typeAliases.get(type.typeName), ctx);
       }
-      String typeArgs = "";
-      if (type.typeArgs != null && !ctx.rawJavaScriptName)
-      {
-         String ref = "";
-         ref += "<";
-         boolean isFirst = true;
-         for (Type typeArg: type.typeArgs)
-         {
-            if (!isFirst) ref += ", ";
-            isFirst = false;
-            ref += typeString(typeArg, ctx.withGenericParameter(true));
-         }
-         ref += ">";
-         typeArgs = ref;
-      }
+      String typeArgs = typeArgsToString(type.typeArgs);
       if (type.typeName.equals("true"))
       {
          if (ctx.typeDescription)
@@ -148,6 +137,26 @@ final class TypeStringGenerator extends Type.TypeVisitor<String>
          return type.typeName + ".class";
       else
          return type.typeName + typeArgs;
+   }
+
+   private String typeArgsToString(List<Type> typeArgs)
+   {
+      String genericArgs = "";
+      if (typeArgs != null && !ctx.rawJavaScriptName)
+      {
+         String ref = "";
+         ref += "<";
+         boolean isFirst = true;
+         for (Type typeArg: typeArgs)
+         {
+            if (!isFirst) ref += ", ";
+            isFirst = false;
+            ref += typeString(typeArg, ctx.withGenericParameter(true));
+         }
+         ref += ">";
+         genericArgs = ref;
+      }
+      return genericArgs;
    }
 
    @Override

@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
 public interface GenericIntf<T,Z extends Node> 
 {
 @JsMethod(name="methodCallbackGeneric")
-<S> void methodCallbackGeneric(MethodCallbackGenericCallback a);
+<S> void methodCallbackGeneric(MethodCallbackGenericCallback<S, Z> a);
 @JsOverlay
 public default Z get(double idx, Class<Z> _type) {
   return (Z)com.user00.domjnate.util.Js.getIndex(this, idx, _type);
